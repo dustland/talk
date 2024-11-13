@@ -20,6 +20,16 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 
+interface Question {
+  id: number;
+  question: string;
+  part: 1 | 2 | 3;
+  topic: string;
+  sub_topic: string | null;
+  follow_up_questions: string[] | null;
+  cue_card_points: string[] | null;
+}
+
 export default function HomePage() {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
@@ -27,7 +37,7 @@ export default function HomePage() {
     "part2"
   );
   const [timeLeft, setTimeLeft] = useState(120);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluation, setEvaluation] = useState<{
     scores: {
@@ -46,13 +56,34 @@ export default function HomePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
 
-  const questions = [
-    "Describe a memorable journey you have taken",
-    "Talk about a skill you would like to learn",
-    "Describe a person who has had a significant influence on you",
-    "Discuss a book that has made a lasting impression on you",
-  ];
+  const fetchRandomQuestion = async (part: number) => {
+    setIsLoadingQuestion(true);
+    try {
+      const response = await fetch(`/api/questions/random?part=${part}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch question");
+      }
+      const data = await response.json();
+      setCurrentQuestion(data);
+    } catch (error) {
+      console.error("Error fetching question:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load question. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingQuestion(false);
+    }
+  };
+
+  // Fetch initial question when part changes
+  useEffect(() => {
+    const part = parseInt(selectedPart.replace("part", ""));
+    fetchRandomQuestion(part);
+  }, [selectedPart]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -103,7 +134,7 @@ export default function HomePage() {
 
           const { text } = await transcribeResponse.json();
           setAnswer(text);
-          const answer = `IELTS Speaking Test part ${selectedPart}: ${questions[currentQuestion]}. \n\nAnswer: ${text}`;
+          const answer = `IELTS Speaking Test part ${selectedPart}: ${currentQuestion?.question}. \n\nAnswer: ${text}`;
 
           // Then, get evaluation
           const evaluateResponse = await fetch("/api/evaluate", {
@@ -205,8 +236,8 @@ export default function HomePage() {
   };
 
   const handleNewQuestion = () => {
-    const nextQuestion = (currentQuestion + 1) % questions.length;
-    setCurrentQuestion(nextQuestion);
+    const part = parseInt(selectedPart.replace("part", ""));
+    fetchRandomQuestion(part);
     setEvaluation(null);
     setAnswer("");
     setTimeLeft(120);
@@ -332,28 +363,62 @@ export default function HomePage() {
                   <Card className="bg-white/10 backdrop-blur-lg text-white flex-1">
                     <CardContent className="p-6">
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-xl">Topic:</h3>
+                        <h3 className="font-semibold text-xl">
+                          Topic: {currentQuestion?.topic}
+                        </h3>
                         <Button
                           onClick={handleNewQuestion}
                           variant="secondary"
                           className="bg-white/20 hover:bg-white/30"
+                          disabled={isLoadingQuestion}
                         >
-                          <Shuffle className="mr-2 h-4 w-4" />
-                          New Question
+                          {isLoadingQuestion ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <Shuffle className="mr-2 h-4 w-4" />
+                              New Question
+                            </>
+                          )}
                         </Button>
                       </div>
                       <p className="text-lg mb-4">
-                        {questions[currentQuestion]}
+                        {isLoadingQuestion ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          currentQuestion?.question
+                        )}
                       </p>
-                      <div className="text-sm opacity-90">
-                        You should say:
-                        <ul className="list-disc list-inside mt-2 space-y-1">
-                          <li>where you went</li>
-                          <li>why you went there</li>
-                          <li>what you did there</li>
-                          <li>and explain why this experience was memorable</li>
-                        </ul>
-                      </div>
+                      {currentQuestion?.part === 2 &&
+                        currentQuestion.cue_card_points && (
+                          <div className="text-sm opacity-90">
+                            You should say:
+                            <ul className="list-disc list-inside mt-2 space-y-1">
+                              {currentQuestion.cue_card_points.map(
+                                (point, index) => (
+                                  <li key={index}>{point}</li>
+                                )
+                              )}
+                            </ul>
+                          </div>
+                        )}
+                      {(currentQuestion?.part === 1 ||
+                        currentQuestion?.part === 3) &&
+                        currentQuestion.follow_up_questions && (
+                          <div className="text-sm opacity-90 mt-4">
+                            Follow-up Questions:
+                            <ul className="list-disc list-inside mt-2 space-y-1">
+                              {currentQuestion.follow_up_questions.map(
+                                (question, index) => (
+                                  <li key={index}>{question}</li>
+                                )
+                              )}
+                            </ul>
+                          </div>
+                        )}
                     </CardContent>
                   </Card>
                 </div>
