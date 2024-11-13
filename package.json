@@ -1,7 +1,17 @@
 {
   "name": "talk",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.3.2",
+  "license": "MIT",
+  "author": "Dustland <hi@dustland.ai>",
+  "homepage": "https://talk.dustland.ai",
+  "repository": "https://github.com/dustland/talk",
+  "keywords": [
+    "ielts",
+    "openai",
+    "ai",
+    "tts",
+    "whisper"
+  ],
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
