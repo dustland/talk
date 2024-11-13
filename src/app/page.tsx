@@ -14,6 +14,7 @@ import {
   Loader2,
   VolumeOff,
   RefreshCcw,
+  Notebook,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -57,7 +58,7 @@ export default function HomePage() {
   const [transcript, setTranscript] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const [isProcessingTTS, setIsProcessingTTS] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
@@ -151,6 +152,7 @@ export default function HomePage() {
 
         if (text && text.trim()) {
           setTranscript(text); // Use the latest transcription result
+          return text;
         }
       } catch (error) {
         console.error("Error transcribing audio:", error);
@@ -225,15 +227,20 @@ export default function HomePage() {
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state !== "inactive"
     ) {
+      console.log("Stopping recording", mediaRecorderRef.current?.state);
       mediaRecorderRef.current.stop();
       setIsRecording(false);
 
+      // Stop all tracks of the media stream
+      const stream = mediaRecorderRef.current.stream;
+      stream.getTracks().forEach((track) => track.stop());
+
       try {
-        setIsProcessing(true);
+        setIsEvaluating(true);
         // Transcribe any remaining audio and then evaluate the answer
-        await transcribeAccumulatedAudio();
-        if (transcript.trim()) {
-          await evaluateAnswer(transcript.trim());
+        const transcript = await transcribeAccumulatedAudio();
+        if (transcript) {
+          await evaluateAnswer(transcript);
         }
       } catch (error) {
         console.error("Error evaluating answer:", error);
@@ -243,8 +250,10 @@ export default function HomePage() {
           variant: "destructive",
         });
       } finally {
-        setIsProcessing(false);
+        setIsEvaluating(false);
       }
+    } else {
+      console.warn("MediaRecorder is not active or not initialized.");
     }
   };
 
@@ -354,7 +363,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6 bg-gradient-to-r from-indigo-500 to-indigo-900 text-white min-h-screen">
+    <div className="container mx-auto p-4 space-y-6 text-white min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <CardTitle className="flex items-center gap-2 font-semibold">
@@ -401,7 +410,7 @@ export default function HomePage() {
 
         <TabsContent value={selectedPart} className="space-y-4">
           {/* Question Card */}
-          <Card className="bg-white/10 backdrop-blur-lg text-white flex-1">
+          <Card className="bg-white/10 backdrop-blur-lg text-white flex-1 border-white/40 shadow-xl">
             <CardContent className="p-4 space-y-2">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-base">
@@ -426,7 +435,7 @@ export default function HomePage() {
                   )}
                 </Button>
               </div>
-              <p className="font-bold mb-4">
+              <p className="font-bold mb-4 text-lg">
                 {currentQuestion?.question || "Loading question..."}
               </p>
               {/* Additional content based on the part */}
@@ -434,7 +443,7 @@ export default function HomePage() {
                 currentQuestion.cue_card_points && (
                   <div className="opacity-90">
                     You should say:
-                    <ul className="list-disc list-inside mt-2 space-y-1">
+                    <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
                       {currentQuestion.cue_card_points.map((point, index) => (
                         <li key={index}>{point}</li>
                       ))}
@@ -443,9 +452,9 @@ export default function HomePage() {
                 )}
               {(currentQuestion?.part === 1 || currentQuestion?.part === 3) &&
                 currentQuestion.follow_up_questions && (
-                  <div className="text-sm opacity-90 mt-4">
+                  <div className="opacity-90 mt-4">
                     Follow-up Questions:
-                    <ul className="list-disc list-inside mt-2 space-y-1">
+                    <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
                       {currentQuestion.follow_up_questions.map(
                         (question, index) => (
                           <li key={index}>{question}</li>
@@ -465,19 +474,19 @@ export default function HomePage() {
                 isRecording
                   ? "bg-red-500 hover:bg-red-600"
                   : "bg-green-600 hover:bg-green-500"
-              } text-white text-base w-full md:w-auto`}
-              disabled={isProcessing}
+              } text-white text-base w-full md:w-auto py-4`}
+              disabled={isEvaluating}
               onClick={isRecording ? handleStopRecording : handleStartRecording}
             >
-              {isProcessing ? (
+              {isEvaluating ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Evaluating...
+                  Evaluating your answer...
                 </>
               ) : isRecording ? (
                 <>
                   <Square className="mr-2 h-5 w-5" />
-                  Stop Recording
+                  Stop Speaking
                 </>
               ) : (
                 <>
@@ -489,22 +498,25 @@ export default function HomePage() {
           </div>
 
           {/* User's Answer */}
-          <Card className="bg-white/10 backdrop-blur-lg text-yellow-500 border-yellow-200">
+          <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl">
             <CardContent className="p-4 space-y-4">
               <h3 className="font-semibold mb-4">Transcript of your answer</h3>
-              <p className="text-yellow-300/80 rounded min-h-24">
+              <p className="rounded min-h-24">
                 {transcript ? transcript : "Listening..."}
               </p>
             </CardContent>
           </Card>
 
           {/* Evaluation */}
-          {!isRecording && evaluation && (
+          {evaluation && (
             <>
-              <Card className="bg-yellow-400/50 backdrop-blur-lg text-white border-yellow-200">
+              <Card className="bg-purple-500/20 backdrop-blur-lg text-white border-white/40 shadow-xl">
                 <CardContent className="p-4 space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-semibold">Evaluation Report</h3>
+                    <div className="flex items-center gap-2">
+                      <Notebook className="h-4 w-4" />
+                      <h3 className="font-semibold">Evaluation Report</h3>
+                    </div>
                     <motion.div
                       initial={{ scale: 1 }}
                       animate={{ scale: [1, 1.1, 1] }}
@@ -518,7 +530,7 @@ export default function HomePage() {
                       </Badge>
                     </motion.div>
                   </div>
-                  <div className="grid grid-cols-2 w-full gap-4">
+                  <div className="grid grid-cols-2 w-full gap-6">
                     {[
                       {
                         name: "Fluency & Coherence",
@@ -563,7 +575,7 @@ export default function HomePage() {
                         Feedback
                       </AccordionTrigger>
                       <AccordionContent>
-                        <p className="text-base font-medium text-yellow-100/80">
+                        <p className="text-base font-medium text-white">
                           {evaluation.feedback}
                         </p>
                       </AccordionContent>
@@ -571,7 +583,7 @@ export default function HomePage() {
                   </Accordion>
                 </CardContent>
               </Card>
-              <Card className="bg-white/10 backdrop-blur-lg text-white">
+              <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl">
                 <CardContent className="p-4 space-y-4">
                   <div>
                     <div className="space-y-2">
