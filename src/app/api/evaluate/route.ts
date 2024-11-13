@@ -6,7 +6,6 @@ const openai = new OpenAI({
   baseURL: "https://oai.helicone.ai/v1",
   defaultHeaders: {
     "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
-    "helicone-stream-usage": "true",
   },
 });
 
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
     });
 
     const content = completion.choices[0].message.content;
-    console.log(content);
+    console.log(completion);
     if (!content) {
       throw new Error("No content received from OpenAI");
     }
