@@ -17,20 +17,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // Convert Blob to File with proper name and type
-    const file = new File([audioFile], "audio.wav", { type: audioFile.type });
+    // Ensure the Blob is valid
+    if (audioFile.size === 0) {
+      return NextResponse.json({ error: "Empty audio file" }, { status: 400 });
+    }
 
-    // Create transcription using OpenAI's Whisper model
+    // Create a File object that OpenAI can process
+    const file = new File([audioFile], "audio.webm", { type: "audio/webm" });
+
     const transcription = await openai.audio.transcriptions.create({
       file: file,
       model: "whisper-1",
-      language: "en", // Specify English for IELTS
+      language: "en",
       response_format: "text",
     });
 
     return NextResponse.json({ text: transcription });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Transcription error:", error);
+
+    // Check for specific error details
+    if (error.response) {
+      const errorDetails = await error.response.json();
+      console.error("OpenAI API error details:", errorDetails);
+    }
+
     return NextResponse.json(
       { error: "Failed to transcribe audio" },
       { status: 500 }
@@ -38,7 +49,6 @@ export async function POST(req: Request) {
   }
 }
 
-// Increase payload size limit for audio files
 export const config = {
   api: {
     bodyParser: false,
