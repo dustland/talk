@@ -11,10 +11,10 @@ import {
   Mic,
   PauseCircle,
   Timer,
-  Shuffle,
-  Volume,
+  Volume2,
   Loader2,
   VolumeOff,
+  RefreshCcw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -36,7 +36,7 @@ export default function HomePage() {
   const [selectedPart, setSelectedPart] = useState<"part1" | "part2" | "part3">(
     "part2"
   );
-  const [timeLeft, setTimeLeft] = useState(120);
+  const [timeEllapsed, setTimeEllapsed] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluation, setEvaluation] = useState<{
@@ -87,11 +87,11 @@ export default function HomePage() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isRecording && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    if (isRecording) {
+      timer = setInterval(() => setTimeEllapsed((prev) => prev + 1), 1000);
     }
     return () => clearInterval(timer);
-  }, [isRecording, timeLeft]);
+  }, [isRecording, timeEllapsed]);
 
   const handleStartRecording = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -237,10 +237,11 @@ export default function HomePage() {
 
   const handleNewQuestion = () => {
     const part = parseInt(selectedPart.replace("part", ""));
+    setCurrentQuestion(null);
     fetchRandomQuestion(part);
     setEvaluation(null);
     setAnswer("");
-    setTimeLeft(120);
+    setTimeEllapsed(0);
     setIsRecording(false);
   };
 
@@ -310,17 +311,17 @@ export default function HomePage() {
   }, [audioRef]);
 
   return (
-    <div className="container mx-auto p-4 space-y-6 max-w-4xl">
-      <Card className="bg-gradient-to-r from-[#A855F7] to-[#4F46E5] text-white">
+    <div className="container mx-auto p-2 md:p-4 space-y-6 max-w-4xl">
+      <Card className="bg-gradient-to-r from-purple-500 to-purple-900 text-white">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-2xl font-bold">
+            <CardTitle className="flex items-center gap-2 font-semibold">
               <Image src="/talk.svg" alt="Talk Master" width={32} height={32} />
-              Talk Master
+              <span className="text-lg md:text-xl">Talk Master</span>
             </CardTitle>
-            <div className="flex items-center gap-2 text-white bg-gray-700 px-4 py-2 rounded-full">
-              <Timer className="h-5 w-5" />
-              <span>{formatTime(timeLeft)} / 02:00</span>
+            <div className="flex items-center gap-2 text-white bg-purple-500 px-4 py-2 rounded-full">
+              <Timer className="h-4 w-4" />
+              <span className="font-semibold">{formatTime(timeEllapsed)}</span>
             </div>
           </div>
         </CardHeader>
@@ -338,21 +339,21 @@ export default function HomePage() {
                 className="data-[state=active]:bg-white data-[state=active]:text-purple-700"
                 disabled={isRecording}
               >
-                Part 1: Introduction
+                Part 1<span className="hidden md:block">: Introduction</span>
               </TabsTrigger>
               <TabsTrigger
                 value="part2"
                 className="data-[state=active]:bg-white data-[state=active]:text-purple-700"
                 disabled={isRecording}
               >
-                Part 2: Long Turn
+                Part 2<span className="hidden md:block">: Long Turn</span>
               </TabsTrigger>
               <TabsTrigger
                 value="part3"
                 className="data-[state=active]:bg-white data-[state=active]:text-purple-700"
                 disabled={isRecording}
               >
-                Part 3: Discussion
+                Part 3<span className="hidden md:block">: Discussion</span>
               </TabsTrigger>
             </TabsList>
 
@@ -374,13 +375,17 @@ export default function HomePage() {
                         >
                           {isLoadingQuestion ? (
                             <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Loading...
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span className="ml-2 hidden md:block">
+                                Loading...
+                              </span>
                             </>
                           ) : (
                             <>
-                              <Shuffle className="mr-2 h-4 w-4" />
-                              New Question
+                              <RefreshCcw className="h-4 w-4" />
+                              <span className="ml-2 hidden md:block">
+                                New Question
+                              </span>
                             </>
                           )}
                         </Button>
@@ -461,7 +466,7 @@ export default function HomePage() {
                   <CardContent className="p-6">
                     <h3 className="font-semibold text-xl mb-4">Your Answer</h3>
                     <div className="space-y-4">
-                      <p className="text-sm bg-gray-800 p-3 rounded">
+                      <p className="text-sm bg-gray-800/40 p-3 rounded">
                         {answer}
                       </p>
                     </div>
@@ -526,8 +531,8 @@ export default function HomePage() {
                         <div>
                           <div className="mt-4 space-y-2">
                             <div className="flex justify-between">
-                              <h4 className="font-semibold text-lg mb-2">
-                                Reference Answer from AI
+                              <h4 className="font-semibold text-lg">
+                                Reference Answer
                               </h4>
                               <Button
                                 variant="secondary"
@@ -544,16 +549,14 @@ export default function HomePage() {
                                 {isPlaying ? (
                                   <VolumeOff className="h-4 w-4" />
                                 ) : (
-                                  <Volume className="h-4 w-4" />
+                                  <Volume2 className="h-4 w-4" />
                                 )}
                                 <span className="hidden md:block ml-2">
-                                  {isPlaying
-                                    ? "Stop Playing"
-                                    : "Listen to Reference Answer"}
+                                  {isPlaying ? "Stop Playing" : "Listen"}
                                 </span>
                               </Button>
                             </div>
-                            <p className="text-sm bg-gray-800 p-3 rounded">
+                            <p className=" bg-gray-800/40 p-3 rounded">
                               {evaluation.reference}
                             </p>
                           </div>
