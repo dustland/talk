@@ -182,7 +182,7 @@ export default function HomePage() {
 
       // Determine MIME type based on platform
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const mimeType = isIOS ? "audio/mp4" : "audio/webm; codecs=opus";
+      const mimeType = isIOS ? "audio/m4a" : "audio/webm; codecs=opus";
 
       // Check if the specified MIME type is supported
       if (!MediaRecorder.isTypeSupported(mimeType)) {

@@ -22,6 +22,7 @@ const isValidMimeType = (mimeType: string | null): boolean => {
     "audio/webm",
     "audio/mpeg",
     "audio/mp4",
+    "audio/m4a",
     "audio/wav",
     "video/mp4",
     "audio/mpga",
