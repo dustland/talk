@@ -180,9 +180,24 @@ export default function HomePage() {
       setIsRecording(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Determine MIME type based on platform
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const mimeType = isIOS ? "audio/m4a" : "audio/webm; codecs=opus";
+      let mimeType = "audio/webm";
+
+      // Try different MIME types for iOS
+      if (isIOS) {
+        if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+          mimeType = "audio/webm";
+        } else {
+          toast({
+            title: "Unsupported MIME type",
+            description: "No supported MIME type found for iOS.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
 
       // Check if the specified MIME type is supported
       if (!MediaRecorder.isTypeSupported(mimeType)) {
