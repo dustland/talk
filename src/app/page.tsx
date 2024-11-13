@@ -185,10 +185,10 @@ export default function HomePage() {
 
       // Try different MIME types for iOS
       if (isIOS) {
-        if (MediaRecorder.isTypeSupported("audio/mp4")) {
-          mimeType = "audio/mp4";
-        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
-          mimeType = "audio/webm";
+        if (MediaRecorder.isTypeSupported("audio/wav")) {
+          mimeType = "audio/wav";
+        } else if (MediaRecorder.isTypeSupported("audio/m4a")) {
+          mimeType = "audio/m4a";
         } else {
           toast({
             title: "Unsupported MIME type",
