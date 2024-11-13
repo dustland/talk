@@ -9,3 +9,14 @@ export interface Question {
   created_at: string;
   updated_at: string;
 }
+
+export interface Evaluation {
+  fluency: number;
+  lexical: number;
+  grammaticalRange: number;
+  pronunciation: number;
+  overall: number;
+  feedback: string;
+  referenceAnswer: string;
+  answer: string;
+}

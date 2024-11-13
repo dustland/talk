@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.0",
+    "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-tabs": "^1.1.1",
+    "@radix-ui/react-toast": "^1.2.2",
     "@supabase/supabase-js": "^2.46.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
