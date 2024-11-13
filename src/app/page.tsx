@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import {
   Mic,
-  PauseCircle,
+  Square,
   Timer,
   Volume2,
   Loader2,
@@ -42,9 +41,8 @@ export default function HomePage() {
   const [selectedPart, setSelectedPart] = useState<"part1" | "part2" | "part3">(
     "part2"
   );
-  const [timeEllapsed, setTimeEllapsed] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-  const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluation, setEvaluation] = useState<{
     scores: {
       fluency: number;
@@ -56,18 +54,19 @@ export default function HomePage() {
     feedback: string;
     reference: string;
   } | null>(null);
-  const [answer, setAnswer] = useState("");
+  const [transcript, setTranscript] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessingTTS, setIsProcessingTTS] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
-  const [interimTranscript, setInterimTranscript] = useState("");
-  const chunksToTranscribeRef = useRef<Blob[]>([]);
-  const transcriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const transcriptionQueue = useRef<Blob[]>([]);
-  const isTranscribing = useRef(false);
-  const transcriptionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [transcriptionInterval, setTranscriptionInterval] = useState<number>(5);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const transcriptionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch a random question based on the selected part
   const fetchRandomQuestion = async (part: number) => {
     setIsLoadingQuestion(true);
     try {
@@ -89,261 +88,199 @@ export default function HomePage() {
     }
   };
 
-  // Fetch initial question when part changes
+  // Fetch initial question when the component mounts or selectedPart changes
   useEffect(() => {
     const part = parseInt(selectedPart.replace("part", ""));
     fetchRandomQuestion(part);
   }, [selectedPart]);
 
+  // Update the timer when recording
   useEffect(() => {
-    let timer: NodeJS.Timeout;
     if (isRecording) {
-      timer = setInterval(() => setTimeEllapsed((prev) => prev + 1), 1000);
+      timerRef.current = setInterval(() => {
+        setTimeElapsed((prev) => prev + 1);
+      }, 1000);
+
+      // Set up interval for progressive transcription
+      transcriptionTimerRef.current = setInterval(() => {
+        if (isRecording) {
+          // only transcribe automatically during recording
+          transcribeAccumulatedAudio();
+        }
+      }, transcriptionInterval * 1000);
+    } else {
+      if (timerRef.current) {
+        setTimeElapsed(0);
+        clearInterval(timerRef.current);
+      }
+      if (transcriptionTimerRef.current) {
+        clearInterval(transcriptionTimerRef.current);
+      }
     }
-    return () => clearInterval(timer);
-  }, [isRecording, timeEllapsed]);
 
-  // Define transcribeChunk inside the component to access state setters
-  const transcribeChunk = async (audioChunk: Blob) => {
-    try {
-      console.log("Starting transcription of chunk:", {
-        size: audioChunk.size,
-        type: audioChunk.type,
-        timestamp: new Date().toISOString(),
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (transcriptionTimerRef.current)
+        clearInterval(transcriptionTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRecording]);
+
+  // Function to handle transcription of accumulated audio
+  const transcribeAccumulatedAudio = async () => {
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+
+    if (audioBlob.size > 0) {
+      try {
+        const formData = new FormData();
+        formData.append("file", audioBlob, "audio.webm");
+
+        const response = await fetch("/api/transcribe", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Transcription failed: ${response.statusText}. ${errorText}`
+          );
+        }
+
+        const { text } = await response.json();
+
+        if (text && text.trim()) {
+          setTranscript(text); // Use the latest transcription result
+        }
+      } catch (error) {
+        console.error("Error transcribing audio:", error);
+        toast({
+          title: "Transcription Error",
+          description: "Failed to transcribe audio. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  // Start recording audio
+  const handleStartRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast({
+        title: "Browser Error",
+        description: "Your browser doesn't support audio recording.",
+        variant: "destructive",
       });
+      return;
+    }
 
-      // Verify the blob is valid
-      if (!(audioChunk instanceof Blob) || audioChunk.size === 0) {
-        console.error("Invalid audio chunk:", audioChunk);
+    try {
+      setIsRecording(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Specify MIME type explicitly
+      const options: MediaRecorderOptions = {
+        mimeType: "audio/webm; codecs=opus",
+      };
+
+      // Check if the specified MIME type is supported
+      if (!MediaRecorder.isTypeSupported(options.mimeType!)) {
+        toast({
+          title: "Unsupported MIME type",
+          description: `MIME type ${options.mimeType} is not supported in your browser.`,
+          variant: "destructive",
+        });
         return;
       }
 
-      const formData = new FormData();
-      formData.append("file", audioChunk, "audio.webm");
+      const mediaRecorder = new MediaRecorder(stream, options);
 
-      const response = await fetch("/api/transcribe", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Transcription failed: ${response.statusText}. ${errorText}`
-        );
-      }
-
-      const { text } = await response.json();
-      console.log("Received transcription:", {
-        text,
-        timestamp: new Date().toISOString(),
-      });
-
-      if (text && text.trim()) {
-        setInterimTranscript((prev) => {
-          const newTranscript = prev + " " + text;
-          console.log("Updated transcript:", {
-            text: newTranscript,
-            timestamp: new Date().toISOString(),
-          });
-          return newTranscript;
-        });
-      }
-    } catch (error) {
-      console.error("Error transcribing chunk:", error);
-      toast({
-        title: "Transcription Error",
-        description: "Failed to transcribe audio chunk. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const processTranscriptionQueue = async () => {
-    if (isTranscribing.current || transcriptionQueue.current.length === 0) {
-      return;
-    }
-
-    try {
-      isTranscribing.current = true;
-      const chunk = transcriptionQueue.current.shift();
-      if (chunk) {
-        await transcribeChunk(chunk);
-      }
-    } finally {
-      isTranscribing.current = false;
-      // Process next chunk if available
-      if (transcriptionQueue.current.length > 0) {
-        setTimeout(processTranscriptionQueue, 1000); // Add delay between requests
-      }
-    }
-  };
-
-  const handleStartRecording = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("Your browser doesn't support audio recording.");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm;codecs=opus",
-        audioBitsPerSecond: 128000,
-      });
       mediaRecorderRef.current = mediaRecorder;
-
-      // Reset states
-      setInterimTranscript("");
-      setAnswer("");
-      chunksToTranscribeRef.current = [];
+      audioChunksRef.current = [];
+      setTranscript("");
+      setEvaluation(null);
+      setTimeElapsed(0);
 
       mediaRecorder.ondataavailable = (event) => {
-        console.log("Received audio chunk:", {
-          size: event.data.size,
-          type: event.data.type,
-          timestamp: new Date().toISOString(),
-        });
-
         if (event.data.size > 0) {
-          chunksToTranscribeRef.current.push(event.data);
+          audioChunksRef.current = [...audioChunksRef.current, event.data];
         }
       };
 
-      // Set up transcription interval
-      if (transcriptionIntervalRef.current) {
-        clearInterval(transcriptionIntervalRef.current);
-      }
-      transcriptionIntervalRef.current = setInterval(() => {
-        if (chunksToTranscribeRef.current.length > 0) {
-          console.log("Queueing chunks for transcription:", {
-            count: chunksToTranscribeRef.current.length,
-            totalSize: chunksToTranscribeRef.current.reduce(
-              (acc, chunk) => acc + chunk.size,
-              0
-            ),
-            timestamp: new Date().toISOString(),
-          });
-
-          // Add chunks to the transcription queue
-          transcriptionQueue.current.push(...chunksToTranscribeRef.current);
-
-          // Clear chunks after queuing
-          chunksToTranscribeRef.current = [];
-
-          // Process the transcription queue
-          processTranscriptionQueue();
-        }
-      }, 3000);
-
-      mediaRecorder.start(1000);
-      setIsRecording(true);
-
-      mediaRecorder.onstop = () => {
-        if (chunksToTranscribeRef.current.length > 0) {
-          const finalBlob = new Blob(chunksToTranscribeRef.current, {
-            type: "audio/webm;codecs=opus",
-          });
-          if (finalBlob.size > 0) {
-            transcribeChunk(finalBlob);
-          }
-        }
-        if (transcriptionIntervalRef.current) {
-          clearInterval(transcriptionIntervalRef.current);
-          transcriptionIntervalRef.current = null;
-        }
-        stream.getTracks().forEach((track) => track.stop());
-      };
+      mediaRecorder.start(1000); // Collect data every second
     } catch (error) {
       console.error("Error accessing microphone:", error);
       toast({
-        title: "Failed to access microphone",
-        description: "Please check permissions.",
+        title: "Microphone Error",
+        description:
+          "Failed to access the microphone. Please check permissions.",
         variant: "destructive",
       });
+      setIsRecording(false);
     }
   };
 
+  // Stop recording audio
   const handleStopRecording = async () => {
     if (
       mediaRecorderRef.current &&
-      mediaRecorderRef.current.state === "recording"
+      mediaRecorderRef.current.state !== "inactive"
     ) {
-      console.log("Stopping recording");
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      setIsProcessing(true);
-
-      // Clear the transcription interval
-      if (transcriptionIntervalRef.current) {
-        clearInterval(transcriptionIntervalRef.current);
-        transcriptionIntervalRef.current = null;
-      }
 
       try {
-        // Use the final transcript as the answer
-        setAnswer(interimTranscript.trim());
-
-        // Get evaluation
-        const evaluateResponse = await fetch("/api/evaluate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            answer: `IELTS Speaking Test part ${selectedPart}: ${
-              currentQuestion?.question
-            }. \n\nAnswer: ${interimTranscript.trim()}`,
-          }),
-        });
-
-        if (!evaluateResponse.ok) {
-          throw new Error("Evaluation failed");
+        setIsProcessing(true);
+        // Transcribe any remaining audio and then evaluate the answer
+        await transcribeAccumulatedAudio();
+        if (transcript.trim()) {
+          await evaluateAnswer(transcript.trim());
         }
-
-        const evaluationData = await evaluateResponse.json();
-        setEvaluation(evaluationData);
       } catch (error) {
-        console.error("Error processing audio:", error);
+        console.error("Error evaluating answer:", error);
         toast({
-          title: "Processing Error",
-          description: "Failed to process audio. Please try again.",
+          title: "Evaluation Error",
+          description: `Failed to evaluate your answer: ${error}. Please try again.`,
           variant: "destructive",
         });
       } finally {
         setIsProcessing(false);
-        chunksToTranscribeRef.current = [];
       }
     }
   };
 
-  const handleNewQuestion = () => {
-    const part = parseInt(selectedPart.replace("part", ""));
-    setCurrentQuestion(null);
-    fetchRandomQuestion(part);
-    setEvaluation(null);
-    setAnswer("");
-    setTimeEllapsed(0);
-    setIsRecording(false);
+  // Evaluate the user's answer
+  const evaluateAnswer = async (userAnswer: string) => {
+    const evaluateResponse = await fetch("/api/evaluate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        answer: `IELTS Speaking Test part ${selectedPart.replace(
+          "part",
+          ""
+        )}: ${currentQuestion?.question}. \n\nAnswer: ${userAnswer}`,
+      }),
+    });
+
+    if (!evaluateResponse.ok) {
+      throw new Error("Evaluation failed");
+    }
+
+    const evaluationData = await evaluateResponse.json();
+    setEvaluation(evaluationData);
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
+  // Handle playing the reference answer
   const playReferenceAnswer = async (text: string) => {
     try {
-      if (audioRef) {
-        audioRef.pause();
-        audioRef.remove();
-        setAudioRef(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
 
-      setIsPlaying(true);
+      setIsProcessingTTS(true);
+
       const response = await fetch("/api/tts", {
         method: "POST",
         headers: {
@@ -356,14 +293,17 @@ export default function HomePage() {
         throw new Error("Failed to fetch audio");
       }
 
+      setIsProcessingTTS(false);
+      setIsPlaying(true);
+
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
+      audioRef.current = audio;
 
       audio.onended = () => {
         setIsPlaying(false);
         URL.revokeObjectURL(audioUrl);
-        setAudioRef(null);
       };
 
       audio.onpause = () => {
@@ -374,34 +314,48 @@ export default function HomePage() {
         setIsPlaying(true);
       };
 
-      setAudioRef(audio);
       await audio.play();
     } catch (error) {
       console.error("Error playing reference answer:", error);
       setIsPlaying(false);
-      setAudioRef(null);
+    } finally {
+      setIsProcessingTTS(false);
     }
   };
 
+  // Clean up audioRef when the component unmounts
   useEffect(() => {
     return () => {
-      if (audioRef) {
-        audioRef.pause();
-        audioRef.remove();
-      }
-    };
-  }, [audioRef]);
-
-  useEffect(() => {
-    return () => {
-      if (transcriptionTimeoutRef.current) {
-        clearTimeout(transcriptionTimeoutRef.current);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
     };
   }, []);
 
+  // Handle getting a new question
+  const handleNewQuestion = () => {
+    const part = parseInt(selectedPart.replace("part", ""));
+    setCurrentQuestion(null);
+    fetchRandomQuestion(part);
+    setEvaluation(null);
+    setTranscript("");
+    setTimeElapsed(0);
+    setIsRecording(false);
+  };
+
+  // Format the time elapsed
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-6 bg-gradient-to-r from-indigo-500 to-indigo-900 text-white min-h-screen">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <CardTitle className="flex items-center gap-2 font-semibold">
           <Image src="/talk.svg" alt="Talk Master" width={32} height={32} />
@@ -409,9 +363,11 @@ export default function HomePage() {
         </CardTitle>
         <div className="flex items-center gap-2 text-white bg-indigo-500 px-4 py-2 rounded-full">
           <Timer className="h-4 w-4" />
-          <span className="font-semibold">{formatTime(timeEllapsed)}</span>
+          <span className="font-semibold">{formatTime(timeElapsed)}</span>
         </div>
       </div>
+
+      {/* Tabs for selecting the part */}
       <Tabs
         value={selectedPart}
         onValueChange={(value) =>
@@ -444,123 +400,108 @@ export default function HomePage() {
         </TabsList>
 
         <TabsContent value={selectedPart} className="space-y-4">
-          <div className="space-y-4">
-            {/* Header with Timer */}
-            <div className="flex justify-between items-center">
-              <Card className="bg-white/10 backdrop-blur-lg text-white flex-1">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-base">
-                      Topic: {currentQuestion?.topic}
-                    </h3>
-                    <Button
-                      onClick={handleNewQuestion}
-                      variant="secondary"
-                      className="bg-white/20 hover:bg-white/30"
-                      disabled={isLoadingQuestion}
-                    >
-                      {isLoadingQuestion ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="ml-2 hidden md:block">
-                            Loading...
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCcw className="h-4 w-4" />
-                          <span className="ml-2 hidden md:block">
-                            New Question
-                          </span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <p className="font-bold mb-4">
-                    {isLoadingQuestion ? (
+          {/* Question Card */}
+          <Card className="bg-white/10 backdrop-blur-lg text-white flex-1">
+            <CardContent className="p-4 space-y-2">
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-base">
+                  Topic: {currentQuestion?.topic || "Loading..."}
+                </h3>
+                <Button
+                  onClick={handleNewQuestion}
+                  variant="secondary"
+                  className="bg-white/20 hover:bg-white/30"
+                  disabled={isLoadingQuestion}
+                >
+                  {isLoadingQuestion ? (
+                    <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      currentQuestion?.question
-                    )}
-                  </p>
-                  {currentQuestion?.part === 2 &&
-                    currentQuestion.cue_card_points && (
-                      <div className="text-sm opacity-90">
-                        You should say:
-                        <ul className="list-disc list-inside mt-2 space-y-1">
-                          {currentQuestion.cue_card_points.map(
-                            (point, index) => (
-                              <li key={index}>{point}</li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                  {(currentQuestion?.part === 1 ||
-                    currentQuestion?.part === 3) &&
-                    currentQuestion.follow_up_questions && (
-                      <div className="text-sm opacity-90 mt-4">
-                        Follow-up Questions:
-                        <ul className="list-disc list-inside mt-2 space-y-1">
-                          {currentQuestion.follow_up_questions.map(
-                            (question, index) => (
-                              <li key={index}>{question}</li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recording Controls */}
-            <div className="flex items-center gap-2 justify-center">
-              <Button
-                size="lg"
-                className={`${
-                  isRecording
-                    ? "bg-red-500 hover:bg-red-600"
-                    : "bg-green-500 hover:bg-green-600"
-                } text-white text-base w-full md:w-auto`}
-                disabled={isProcessing}
-                onClick={
-                  isRecording ? handleStopRecording : handleStartRecording
-                }
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : isRecording ? (
-                  <>
-                    <PauseCircle className="mr-2 h-5 w-5" />
-                    Stop Recording
-                  </>
-                ) : (
-                  <>
-                    <Mic className="mr-2 h-5 w-5" />
-                    Start Speaking
-                  </>
+                      <span className="ml-2 hidden md:block">Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-4 w-4" />
+                      <span className="ml-2 hidden md:block">New Question</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="font-bold mb-4">
+                {currentQuestion?.question || "Loading question..."}
+              </p>
+              {/* Additional content based on the part */}
+              {currentQuestion?.part === 2 &&
+                currentQuestion.cue_card_points && (
+                  <div className="opacity-90">
+                    You should say:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      {currentQuestion.cue_card_points.map((point, index) => (
+                        <li key={index}>{point}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
-              </Button>
-            </div>
+              {(currentQuestion?.part === 1 || currentQuestion?.part === 3) &&
+                currentQuestion.follow_up_questions && (
+                  <div className="text-sm opacity-90 mt-4">
+                    Follow-up Questions:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      {currentQuestion.follow_up_questions.map(
+                        (question, index) => (
+                          <li key={index}>{question}</li>
+                        )
+                      )}
+                    </ul>
+                  </div>
+                )}
+            </CardContent>
+          </Card>
 
-            {/* Speaking Transcripts and Reference Answer */}
-            <Card className="bg-white/10 backdrop-blur-lg text-white">
-              <CardContent className="p-4 space-y-4">
-                <h3 className="font-semibold mb-4">Your Answer</h3>
-                <p className="text-sm text-white/80 rounded min-h-24">
-                  {isRecording ? interimTranscript || "Listening..." : answer}
-                </p>
-              </CardContent>
-            </Card>
+          {/* Recording Controls */}
+          <div className="flex items-center gap-2 justify-center">
+            <Button
+              size="lg"
+              className={`${
+                isRecording
+                  ? "bg-red-500 hover:bg-red-600"
+                  : "bg-green-600 hover:bg-green-500"
+              } text-white text-base w-full md:w-auto`}
+              disabled={isProcessing}
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Evaluating...
+                </>
+              ) : isRecording ? (
+                <>
+                  <Square className="mr-2 h-5 w-5" />
+                  Stop Recording
+                </>
+              ) : (
+                <>
+                  <Mic className="mr-2 h-5 w-5" />
+                  Start Speaking
+                </>
+              )}
+            </Button>
+          </div>
 
-            {/* Evaluation and AI Feedback */}
+          {/* User's Answer */}
+          <Card className="bg-white/10 backdrop-blur-lg text-yellow-500 border-yellow-200">
+            <CardContent className="p-4 space-y-4">
+              <h3 className="font-semibold mb-4">Transcript of your answer</h3>
+              <p className="text-yellow-300/80 rounded min-h-24">
+                {transcript ? transcript : "Listening..."}
+              </p>
+            </CardContent>
+          </Card>
 
-            {!isRecording && evaluation && (
-              <Card className="bg-white/10 backdrop-blur-lg text-white">
+          {/* Evaluation */}
+          {!isRecording && evaluation && (
+            <>
+              <Card className="bg-yellow-400/50 backdrop-blur-lg text-white border-yellow-200">
                 <CardContent className="p-4 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold">Evaluation Report</h3>
@@ -571,97 +512,104 @@ export default function HomePage() {
                     >
                       <Badge
                         variant="secondary"
-                        className="text-xl px-3 py-1 bg-white text-indigo-700"
+                        className="text-xl px-3 py-1 bg-white text-green-700"
                       >
                         {evaluation.scores.overall.toFixed(1)}
                       </Badge>
                     </motion.div>
                   </div>
-                  <div className="flex flex-wrap space-y-4">
-                    <div className="grid grid-cols-2 w-full gap-4">
-                      {[
-                        {
-                          name: "Fluency & Coherence",
-                          value: evaluation.scores.fluency,
-                        },
-                        {
-                          name: "Lexical Resource",
-                          value: evaluation.scores.lexical,
-                        },
-                        {
-                          name: "Grammatical Range",
-                          value: evaluation.scores.grammar,
-                        },
-                        {
-                          name: "Pronunciation",
-                          value: evaluation.scores.pronunciation,
-                        },
-                      ].map((criterion) => (
-                        <div key={criterion.name} className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="font-medium">
-                              {criterion.name}
-                            </span>
-                            <span>{criterion.value.toFixed(1)}</span>
-                          </div>
-                          <Progress
-                            value={(criterion.value / 9) * 100}
-                            className="h-2 bg-white/30"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <Accordion
-                      type="single"
-                      collapsible
-                      defaultChecked
-                      className="w-full"
-                    >
-                      <AccordionItem value="feedback">
-                        <AccordionTrigger className="text-base font-semibold">
-                          Comments
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <p>{evaluation.feedback}</p>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                    <div>
-                      <div className="mt-4 space-y-2">
+                  <div className="grid grid-cols-2 w-full gap-4">
+                    {[
+                      {
+                        name: "Fluency & Coherence",
+                        value: evaluation.scores.fluency,
+                      },
+                      {
+                        name: "Lexical Resource",
+                        value: evaluation.scores.lexical,
+                      },
+                      {
+                        name: "Grammatical Range",
+                        value: evaluation.scores.grammar,
+                      },
+                      {
+                        name: "Pronunciation",
+                        value: evaluation.scores.pronunciation,
+                      },
+                    ].map((criterion) => (
+                      <div key={criterion.name} className="space-y-3">
                         <div className="flex justify-between">
-                          <h4 className="font-semibold">Reference Answer</h4>
-                          <Button
-                            variant="secondary"
-                            className="bg-white/20 hover:bg-white/30 transition-all"
-                            onClick={() => {
-                              if (isPlaying && audioRef) {
-                                audioRef.pause();
-                              } else {
-                                playReferenceAnswer(evaluation.reference);
-                              }
-                            }}
-                            disabled={!evaluation?.reference}
-                          >
-                            {isPlaying ? (
-                              <VolumeOff className="h-4 w-4" />
-                            ) : (
-                              <Volume2 className="h-4 w-4" />
-                            )}
-                            <span className="hidden md:block ml-2">
-                              {isPlaying ? "Stop Playing" : "Listen"}
-                            </span>
-                          </Button>
+                          <span className="font-medium">{criterion.name}</span>
+                          <span>{criterion.value.toFixed(1)}</span>
                         </div>
-                        <p className=" bg-gray-800/40 p-3 rounded">
-                          {evaluation.reference}
-                        </p>
+                        <Progress
+                          value={(criterion.value / 9) * 100}
+                          className="h-2 bg-white/30"
+                        />
                       </div>
+                    ))}
+                  </div>
+                  <Accordion
+                    type="single"
+                    collapsible
+                    defaultValue="feedback"
+                    className="w-full"
+                  >
+                    <AccordionItem
+                      value="feedback"
+                      className="border-none space-y-2"
+                    >
+                      <AccordionTrigger className="text-base">
+                        Feedback
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <p className="text-base font-medium text-yellow-100/80">
+                          {evaluation.feedback}
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-lg text-white">
+                <CardContent className="p-4 space-y-4">
+                  <div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">
+                          Reference Answer - Band 7.5
+                        </h4>
+                        <Button
+                          variant="secondary"
+                          className="bg-white/20 hover:bg-white/30 transition-all"
+                          onClick={() => {
+                            if (isPlaying && audioRef.current) {
+                              audioRef.current.pause();
+                            } else if (evaluation.reference) {
+                              playReferenceAnswer(evaluation.reference);
+                            }
+                          }}
+                          disabled={!evaluation?.reference}
+                        >
+                          {isProcessingTTS ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isPlaying ? (
+                            <VolumeOff className="h-4 w-4" />
+                          ) : (
+                            <Volume2 className="h-4 w-4" />
+                          )}
+                          <span className="hidden md:block ml-2">
+                            {isPlaying ? "Stop Playing" : "Listen"}
+                          </span>
+                        </Button>
+                      </div>
+                      <p className="text-white/80">{evaluation.reference}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
-          </div>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>
