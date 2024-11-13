@@ -179,24 +179,26 @@ export default function HomePage() {
     try {
       setIsRecording(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Specify MIME type explicitly
-      const options: MediaRecorderOptions = {
-        mimeType: "audio/webm; codecs=opus",
-      };
+
+      // Determine MIME type based on platform
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const mimeType = isIOS ? "audio/mp4" : "audio/webm; codecs=opus";
 
       // Check if the specified MIME type is supported
-      if (!MediaRecorder.isTypeSupported(options.mimeType!)) {
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
         toast({
           title: "Unsupported MIME type",
-          description: `MIME type ${options.mimeType} is not supported in your browser.`,
+          description: `MIME type ${mimeType} is not supported in your browser.`,
           variant: "destructive",
         });
         return;
       }
 
+      const options: MediaRecorderOptions = { mimeType };
       const mediaRecorder = new MediaRecorder(stream, options);
-
       mediaRecorderRef.current = mediaRecorder;
+      console.log("MediaRecorder initialized with MIME type:", mimeType);
+
       audioChunksRef.current = [];
       setTranscript("");
       setEvaluation(null);
