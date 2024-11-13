@@ -129,12 +129,32 @@ export default function HomePage() {
 
   // Function to handle transcription of accumulated audio
   const transcribeAccumulatedAudio = async () => {
-    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    let mimeType = "audio/webm";
+    let fileExtension = "webm";
+
+    // Use audio/mp4 for iOS if supported
+    if (isIOS) {
+      if (MediaRecorder.isTypeSupported("audio/mp4")) {
+        mimeType = "audio/mp4";
+        fileExtension = "mp4";
+      } else {
+        toast({
+          title: "Unsupported MIME type",
+          description: "No supported MIME type found for iOS.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Create a Blob with the correct MIME type
+    const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
 
     if (audioBlob.size > 0) {
       try {
         const formData = new FormData();
-        formData.append("file", audioBlob, "audio.webm");
+        formData.append("file", audioBlob, `audio.${fileExtension}`);
 
         const response = await fetch("/api/transcribe", {
           method: "POST",
@@ -182,13 +202,13 @@ export default function HomePage() {
 
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       let mimeType = "audio/webm";
+      let fileExtension = "webm";
 
-      // Try different MIME types for iOS
+      // Use audio/mp4 for iOS if supported
       if (isIOS) {
-        if (MediaRecorder.isTypeSupported("audio/wav")) {
-          mimeType = "audio/wav";
-        } else if (MediaRecorder.isTypeSupported("audio/m4a")) {
-          mimeType = "audio/m4a";
+        if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+          fileExtension = "mp4";
         } else {
           toast({
             title: "Unsupported MIME type",
