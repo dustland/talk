@@ -410,7 +410,7 @@ export default function HomePage() {
         </CardTitle>
         <div className="flex items-center gap-2 text-white bg-indigo-500 px-4 py-2 rounded-full">
           <Timer className="h-4 w-4" />
-          <span className="font-semibold">{formatTime(timeElapsed)}</span>
+          <span className="font-mono">{formatTime(timeElapsed)}</span>
         </div>
       </div>
 
