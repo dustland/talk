@@ -7,13 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
+  Copy,
   Mic,
   Square,
   Timer,
   Volume2,
   Loader2,
   VolumeOff,
-  RefreshCcw,
+  RefreshCw,
   Notebook,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -450,24 +451,27 @@ export default function HomePage() {
           <Card className="bg-white/10 backdrop-blur-lg text-white flex-1 border-white/40 shadow-xl">
             <CardContent className="p-4 space-y-2">
               <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-base">
+                <Badge
+                  variant="secondary"
+                  className="text-sm bg-white/20 text-white/80"
+                >
                   Topic: {currentQuestion?.topic || "Loading..."}
-                </h3>
+                </Badge>
                 <Button
                   onClick={handleNewQuestion}
-                  variant="secondary"
-                  className="bg-white/20 hover:bg-white/30"
+                  variant="ghost"
+                  className=""
                   disabled={isLoadingQuestion}
                 >
                   {isLoadingQuestion ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="ml-2 hidden md:block">Loading...</span>
+                      <span className="hidden md:block">Loading...</span>
                     </>
                   ) : (
                     <>
-                      <RefreshCcw className="h-4 w-4" />
-                      <span className="ml-2 hidden md:block">New Question</span>
+                      <RefreshCw className="h-4 w-4" />
+                      <span className="hidden md:block">New Question</span>
                     </>
                   )}
                 </Button>
@@ -625,32 +629,44 @@ export default function HomePage() {
                   <div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-semibold">
-                          Reference Answer - Band 7.5
-                        </h4>
-                        <Button
-                          variant="secondary"
-                          className="bg-white/20 hover:bg-white/30 transition-all"
-                          onClick={() => {
-                            if (isPlaying && audioRef.current) {
-                              audioRef.current.pause();
-                            } else if (evaluation.reference) {
-                              playReferenceAnswer(evaluation.reference);
-                            }
-                          }}
-                          disabled={!evaluation?.reference}
-                        >
-                          {isProcessingTTS ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : isPlaying ? (
-                            <VolumeOff className="h-4 w-4" />
-                          ) : (
-                            <Volume2 className="h-4 w-4" />
-                          )}
-                          <span className="hidden md:block ml-2">
-                            {isPlaying ? "Stop Playing" : "Listen"}
-                          </span>
-                        </Button>
+                        <h4 className="font-semibold">Reference Answer</h4>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            className=""
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                `Question: ${currentQuestion?.question}\n\n${evaluation.reference}`
+                              );
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                            <span className="hidden md:block">Copy</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className=""
+                            onClick={() => {
+                              if (isPlaying && audioRef.current) {
+                                audioRef.current.pause();
+                              } else if (evaluation.reference) {
+                                playReferenceAnswer(evaluation.reference);
+                              }
+                            }}
+                            disabled={!evaluation?.reference}
+                          >
+                            {isProcessingTTS ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : isPlaying ? (
+                              <VolumeOff className="h-4 w-4" />
+                            ) : (
+                              <Volume2 className="h-4 w-4" />
+                            )}
+                            <span className="hidden md:block">
+                              {isPlaying ? "Stop Playing" : "Listen"}
+                            </span>
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-white/80">{evaluation.reference}</p>
                     </div>

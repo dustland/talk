@@ -35,7 +35,7 @@ export async function POST(req: Request) {
               "pronunciation": (integer or x.5 score between 1 and 9, e.g., 5.0, 5.5, 6.0, 6.5),
               "overall": (average of the above scores, rounded to nearest 0.5, following IELTS band score convention)
             },
-            "reference": "Provide a model reference answer that would achieve an IELTS band score of 7.5, demonstrating high proficiency in all evaluated areas."
+            "reference": "Provide a model reference answer that would achieve an IELTS band score of 7.5, demonstrating high proficiency in all evaluated areas, but avoid using advanced vocabulary or complex grammar."
           }
 
           Important: All scores MUST follow the official IELTS band scoring system:
