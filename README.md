@@ -2,7 +2,7 @@
 
 <img src="public/talk.png" alt="IELTS Speaking Master" width="128" />
 
-# Talk Master
+# Talk
 
 An AI-powered IELTS Speaking practice platform that provides real-time feedback, evaluation, and scoring.
 

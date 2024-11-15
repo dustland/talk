@@ -460,15 +460,21 @@ export default function HomePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <CardTitle className="flex items-center gap-2 font-semibold">
-          <Image src="/talk.svg" alt="Talk Master" width={32} height={32} />
-          <span className="text-lg md:text-xl">Talk Master</span>
-          <div className="flex items-center gap-2 text-white bg-indigo-500 px-4 py-2 rounded-full">
+          <Image
+            src="/talk.svg"
+            alt="Talk"
+            width={32}
+            height={32}
+            className="w-6 h-6 md:w-8 md:h-8"
+          />
+          <span className="text-lg md:text-xl hidden md:block">Talk</span>
+          <div className="flex items-center gap-2 text-white bg-indigo-500 px-3 py-1 rounded-full">
             <Timer className="h-4 w-4" />
-            <span className="font-mono">{formatTime(timeElapsed)}</span>
+            <span className="font-mono text-sm">{formatTime(timeElapsed)}</span>
           </div>
         </CardTitle>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm">
             <span>{mode === "learn" ? "Learn" : "Practice"}</span>
             <IconSwitch
               Icon={Sparkles}

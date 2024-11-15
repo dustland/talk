@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Talk Master",
+  title: "Talk",
   description: "Practice for the IELTS Speaking Test",
 };
 
