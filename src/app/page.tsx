@@ -16,6 +16,9 @@ import {
   VolumeOff,
   RefreshCw,
   Notebook,
+  Sparkles,
+  Lightbulb,
+  RotateCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -26,6 +29,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { IconSwitch } from "@/components/icon-switch";
+import { useCompletion } from "ai/react";
 
 interface Question {
   id: number;
@@ -61,12 +66,17 @@ export default function HomePage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isProcessingTTS, setIsProcessingTTS] = useState(false);
+  const [isLoadingReference, setIsLoadingReference] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
   const audioChunksRef = useRef<Blob[]>([]);
   const [transcriptionInterval, setTranscriptionInterval] = useState<number>(5);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [mode, setMode] = useState<"practice" | "learn">("practice");
+  const { completion, complete } = useCompletion({
+    api: "/api/completion",
+  });
 
   // Fetch a random question based on the selected part
   const fetchRandomQuestion = async (part: number) => {
@@ -400,6 +410,51 @@ export default function HomePage() {
       .padStart(2, "0")}`;
   };
 
+  useEffect(() => {
+    if (mode === "learn" && completion) {
+      setEvaluation({
+        ...evaluation!,
+        reference: completion,
+      });
+    }
+  }, [completion]);
+
+  // Function to handle streaming generation of reference answer
+  const generateReferenceAnswer = async () => {
+    try {
+      setIsLoadingReference(true);
+      // Start with empty reference
+      setEvaluation({
+        scores: {
+          fluency: 7.5,
+          lexical: 7.5,
+          grammar: 7.5,
+          pronunciation: 7.5,
+          overall: 7.5,
+        },
+        feedback: "This is a reference answer.",
+        reference: "",
+      });
+      console.log("Generating reference answer", currentQuestion, selectedPart);
+      await complete(
+        `IELTS Speaking Test - Part ${currentQuestion?.part}: ${currentQuestion?.question}`
+      );
+    } catch (error) {
+      console.error("Error generating reference answer:", error);
+      toast({
+        title: "Generation Error",
+        description: "Failed to generate reference answer. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingReference(false);
+    }
+  };
+
+  const handleGenerateReferenceAnswer = async () => {
+    await generateReferenceAnswer();
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-6 text-white min-h-screen">
       {/* Header */}
@@ -407,10 +462,23 @@ export default function HomePage() {
         <CardTitle className="flex items-center gap-2 font-semibold">
           <Image src="/talk.svg" alt="Talk Master" width={32} height={32} />
           <span className="text-lg md:text-xl">Talk Master</span>
+          <div className="flex items-center gap-2 text-white bg-indigo-500 px-4 py-2 rounded-full">
+            <Timer className="h-4 w-4" />
+            <span className="font-mono">{formatTime(timeElapsed)}</span>
+          </div>
         </CardTitle>
-        <div className="flex items-center gap-2 text-white bg-indigo-500 px-4 py-2 rounded-full">
-          <Timer className="h-4 w-4" />
-          <span className="font-mono">{formatTime(timeElapsed)}</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <span>{mode === "learn" ? "Learn" : "Practice"}</span>
+            <IconSwitch
+              Icon={Sparkles}
+              checked={mode === "practice"}
+              onCheckedChange={(checked) =>
+                setMode(checked ? "practice" : "learn")
+              }
+              tooltip={mode === "learn" ? "Get reference answer" : "Practice"}
+            />
+          </div>
         </div>
       </div>
 
@@ -451,15 +519,25 @@ export default function HomePage() {
           <Card className="bg-white/10 backdrop-blur-lg text-white flex-1 border-white/40 shadow-xl">
             <CardContent className="p-4 space-y-2">
               <div className="flex justify-between items-center">
-                <Badge
-                  variant="secondary"
-                  className="text-sm bg-white/20 text-white/80"
-                >
-                  Topic: {currentQuestion?.topic || "Loading..."}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="secondary"
+                    className="text-sm bg-white/20 text-white/80 rounded-full"
+                  >
+                    {currentQuestion?.topic || "Loading..."}
+                  </Badge>
+                  {currentQuestion?.sub_topic && (
+                    <Badge
+                      variant="secondary"
+                      className="text-sm bg-white/20 text-white/80 rounded-full"
+                    >
+                      {currentQuestion.sub_topic}
+                    </Badge>
+                  )}
+                </div>
                 <Button
                   onClick={handleNewQuestion}
-                  variant="ghost"
+                  variant="secondary"
                   className=""
                   disabled={isLoadingQuestion}
                 >
@@ -470,8 +548,8 @@ export default function HomePage() {
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="h-4 w-4" />
-                      <span className="hidden md:block">New Question</span>
+                      <RotateCw className="h-4 w-4" />
+                      <span className="hidden md:block">Change</span>
                     </>
                   )}
                 </Button>
@@ -517,163 +595,184 @@ export default function HomePage() {
                   : "bg-green-600 hover:bg-green-500"
               } text-white text-base w-full md:w-auto py-4`}
               disabled={isEvaluating}
-              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              onClick={
+                mode === "practice"
+                  ? isRecording
+                    ? handleStopRecording
+                    : handleStartRecording
+                  : handleGenerateReferenceAnswer
+              }
             >
-              {isEvaluating ? (
+              {mode === "practice" &&
+                (isEvaluating ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Evaluating your answer...
+                  </>
+                ) : isRecording ? (
+                  <>
+                    <Square className="mr-2 h-5 w-5" />
+                    Stop Speaking
+                  </>
+                ) : (
+                  <>
+                    <Mic className="mr-2 h-5 w-5" />
+                    Start Speaking
+                  </>
+                ))}
+              {mode === "learn" && (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Evaluating your answer...
-                </>
-              ) : isRecording ? (
-                <>
-                  <Square className="mr-2 h-5 w-5" />
-                  Stop Speaking
-                </>
-              ) : (
-                <>
-                  <Mic className="mr-2 h-5 w-5" />
-                  Start Speaking
+                  {isLoadingReference ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-5 w-5" />
+                  )}
+                  Get Reference Answer
                 </>
               )}
             </Button>
           </div>
 
           {/* User's Answer */}
-          <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl">
-            <CardContent className="p-4 space-y-4">
-              <h3 className="font-semibold mb-4">Transcript of your answer</h3>
-              <p className="rounded min-h-24">
-                {transcript ? transcript : "Listening..."}
-              </p>
-            </CardContent>
-          </Card>
+          {mode === "practice" && (
+            <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl">
+              <CardContent className="p-4 space-y-4">
+                <h3 className="font-semibold mb-4">
+                  Transcript of your answer
+                </h3>
+                <p className="rounded min-h-24">
+                  {transcript ? transcript : "Listening..."}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Evaluation */}
-          {evaluation && (
-            <>
-              <Card className="bg-purple-500/20 backdrop-blur-lg text-white border-white/40 shadow-xl">
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <Notebook className="h-4 w-4" />
-                      <h3 className="font-semibold">Evaluation Report</h3>
-                    </div>
-                    <motion.div
-                      initial={{ scale: 1 }}
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    >
-                      <Badge
-                        variant="secondary"
-                        className="text-xl px-3 py-1 bg-white text-green-700"
-                      >
-                        {evaluation.scores.overall.toFixed(1)}
-                      </Badge>
-                    </motion.div>
+          {mode === "practice" && evaluation && (
+            <Card className="bg-purple-500/20 backdrop-blur-lg text-white border-white/40 shadow-xl">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Notebook className="h-4 w-4" />
+                    <h3 className="font-semibold">Evaluation Report</h3>
                   </div>
-                  <div className="grid grid-cols-2 w-full gap-6">
-                    {[
-                      {
-                        name: "Fluency & Coherence",
-                        value: evaluation.scores.fluency,
-                      },
-                      {
-                        name: "Lexical Resource",
-                        value: evaluation.scores.lexical,
-                      },
-                      {
-                        name: "Grammatical Range",
-                        value: evaluation.scores.grammar,
-                      },
-                      {
-                        name: "Pronunciation",
-                        value: evaluation.scores.pronunciation,
-                      },
-                    ].map((criterion) => (
-                      <div key={criterion.name} className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="font-medium">{criterion.name}</span>
-                          <span>{criterion.value.toFixed(1)}</span>
-                        </div>
-                        <Progress
-                          value={(criterion.value / 9) * 100}
-                          className="h-2 bg-white/30"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <Accordion
-                    type="single"
-                    collapsible
-                    defaultValue="feedback"
-                    className="w-full"
+                  <motion.div
+                    initial={{ scale: 1 }}
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
                   >
-                    <AccordionItem
-                      value="feedback"
-                      className="border-none space-y-2"
+                    <Badge
+                      variant="secondary"
+                      className="text-xl px-3 py-1 bg-white text-green-700"
                     >
-                      <AccordionTrigger className="text-base">
-                        Feedback
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-base font-medium text-white">
-                          {evaluation.feedback}
-                        </p>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </CardContent>
-              </Card>
-              <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl">
-                <CardContent className="p-4 space-y-4">
-                  <div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold">Reference Answer</h4>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            className=""
-                            onClick={() => {
-                              navigator.clipboard.writeText(
-                                `Question: ${currentQuestion?.question}\n\n${evaluation.reference}`
-                              );
-                            }}
-                          >
-                            <Copy className="h-4 w-4" />
-                            <span className="hidden md:block">Copy</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className=""
-                            onClick={() => {
-                              if (isPlaying && audioRef.current) {
-                                audioRef.current.pause();
-                              } else if (evaluation.reference) {
-                                playReferenceAnswer(evaluation.reference);
-                              }
-                            }}
-                            disabled={!evaluation?.reference}
-                          >
-                            {isProcessingTTS ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : isPlaying ? (
-                              <VolumeOff className="h-4 w-4" />
-                            ) : (
-                              <Volume2 className="h-4 w-4" />
-                            )}
-                            <span className="hidden md:block">
-                              {isPlaying ? "Stop Playing" : "Listen"}
-                            </span>
-                          </Button>
-                        </div>
+                      {evaluation.scores.overall.toFixed(1)}
+                    </Badge>
+                  </motion.div>
+                </div>
+                <div className="grid grid-cols-2 w-full gap-6">
+                  {[
+                    {
+                      name: "Fluency & Coherence",
+                      value: evaluation.scores.fluency,
+                    },
+                    {
+                      name: "Lexical Resource",
+                      value: evaluation.scores.lexical,
+                    },
+                    {
+                      name: "Grammatical Range",
+                      value: evaluation.scores.grammar,
+                    },
+                    {
+                      name: "Pronunciation",
+                      value: evaluation.scores.pronunciation,
+                    },
+                  ].map((criterion) => (
+                    <div key={criterion.name} className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{criterion.name}</span>
+                        <span>{criterion.value.toFixed(1)}</span>
                       </div>
-                      <p className="text-white/80">{evaluation.reference}</p>
+                      <Progress
+                        value={(criterion.value / 9) * 100}
+                        className="h-2 bg-white/30"
+                      />
                     </div>
+                  ))}
+                </div>
+                <Accordion
+                  type="single"
+                  collapsible
+                  defaultValue="feedback"
+                  className="w-full"
+                >
+                  <AccordionItem
+                    value="feedback"
+                    className="border-none space-y-2"
+                  >
+                    <AccordionTrigger className="text-base">
+                      Feedback
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p className="text-base font-medium text-white">
+                        {evaluation.feedback}
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+          )}
+          {evaluation?.reference && (
+            <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl">
+              <CardContent className="p-4 space-y-4">
+                <div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">Reference Answer</h4>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          className=""
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `Question: ${currentQuestion?.question}\n\n${evaluation.reference}`
+                            );
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                          <span className="hidden md:block">Copy</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className=""
+                          onClick={() => {
+                            if (isPlaying && audioRef.current) {
+                              audioRef.current.pause();
+                            } else if (evaluation.reference) {
+                              playReferenceAnswer(evaluation.reference);
+                            }
+                          }}
+                          disabled={!evaluation?.reference}
+                        >
+                          {isProcessingTTS ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isPlaying ? (
+                            <VolumeOff className="h-4 w-4" />
+                          ) : (
+                            <Volume2 className="h-4 w-4" />
+                          )}
+                          <span className="hidden md:block">
+                            {isPlaying ? "Stop Playing" : "Listen"}
+                          </span>
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-white/80">{evaluation.reference}</p>
                   </div>
-                </CardContent>
-              </Card>
-            </>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>

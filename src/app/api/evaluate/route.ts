@@ -6,6 +6,8 @@ const openai = new OpenAI({
   baseURL: "https://oai.helicone.ai/v1",
   defaultHeaders: {
     "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
+    "Helicone-User-Id": "talk@dustland.ai",
+    "Helicone-Property-App": "talk",
   },
 });
 
@@ -39,6 +41,9 @@ export async function POST(req: Request) {
           }
 
           Important: All scores MUST follow the official IELTS band scoring system:
+          - **Part 1**: Provide concise responses, typically 2-3 sentences, focusing on personal experiences or opinions.
+          - **Part 2**: Deliver a structured monologue lasting 1-2 minutes, covering all aspects of the given topic.
+          - **Part 3**: Offer detailed and analytical responses, usually 3-4 sentences, discussing abstract ideas or broader issues related to the topic.
           - Scores can only be whole numbers (e.g., 5.0, 6.0) or half numbers (e.g., 5.5, 6.5)
           - No other decimal places are allowed (e.g., 5.3, 6.7 are invalid)
           - The overall score must be rounded to the nearest 0.5 with the official rounding rules
