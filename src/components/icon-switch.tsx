@@ -15,24 +15,24 @@ interface IconSwitchProps
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
-  size?: "small" | "medium" | "large";
+  size?: "sm" | "md" | "lg";
   tooltip?: string;
 }
 
 const sizeClasses = {
-  small: {
+  sm: {
     root: "h-5 w-10",
     thumb: "h-4 w-4",
     translate: "translate-x-[24px]",
     icon: "h-3 w-3",
   },
-  medium: {
+  md: {
     root: "h-7 w-14",
     thumb: "h-6 w-6",
     translate: "translate-x-[28px]",
     icon: "h-4 w-4",
   },
-  large: {
+  lg: {
     root: "h-9 w-18",
     thumb: "h-8 w-8",
     translate: "translate-x-[40px]",
@@ -50,7 +50,7 @@ const IconSwitch = React.forwardRef<
       Icon,
       checked,
       onCheckedChange,
-      size = "medium",
+      size = "md",
       tooltip,
       ...props
     },
