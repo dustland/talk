@@ -12,12 +12,11 @@ import {
   Square,
   Timer,
   Volume2,
+  Speech,
   Loader2,
   VolumeOff,
-  RefreshCw,
   Notebook,
   Sparkles,
-  Lightbulb,
   RotateCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -31,6 +30,13 @@ import {
 } from "@/components/ui/accordion";
 import { IconSwitch } from "@/components/icon-switch";
 import { useCompletion } from "ai/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Question {
   id: number;
@@ -41,6 +47,21 @@ interface Question {
   follow_up_questions: string[] | null;
   cue_card_points: string[] | null;
 }
+
+interface VoiceOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const VOICE_OPTIONS: VoiceOption[] = [
+  { id: "alloy", name: "Alloy", description: "Neutral and balanced" },
+  { id: "echo", name: "Echo", description: "Warm and rounded" },
+  { id: "fable", name: "Fable", description: "British accent" },
+  { id: "onyx", name: "Onyx", description: "Deep and authoritative" },
+  { id: "nova", name: "Nova", description: "Energetic and bright" },
+  { id: "shimmer", name: "Shimmer", description: "Clear and precise" },
+];
 
 export default function HomePage() {
   const { toast } = useToast();
@@ -77,6 +98,7 @@ export default function HomePage() {
   const { completion, complete } = useCompletion({
     api: "/api/completion",
   });
+  const [selectedVoice, setSelectedVoice] = useState<string>("onyx");
 
   // Fetch a random question based on the selected part
   const fetchRandomQuestion = async (part: number) => {
@@ -343,7 +365,10 @@ export default function HomePage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          voice: selectedVoice,
+        }),
       });
 
       if (!response.ok) {
@@ -749,8 +774,36 @@ export default function HomePage() {
                           <Copy className="h-4 w-4" />
                           <span className="hidden md:block">Copy</span>
                         </Button>
+                        <Select
+                          value={selectedVoice}
+                          onValueChange={setSelectedVoice}
+                        >
+                          <SelectTrigger className="w-[140px] bg-white/10 border-white/20">
+                            <Speech className="h-4 w-4 mr-2" />
+                            <SelectValue>
+                              {
+                                VOICE_OPTIONS.find(
+                                  (v) => v.id === selectedVoice
+                                )?.name
+                              }
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {VOICE_OPTIONS.map((voice) => (
+                              <SelectItem key={voice.id} value={voice.id}>
+                                <div className="flex flex-col">
+                                  <span>{voice.name}</span>
+                                  <span className="text-xs text-primary/60">
+                                    {voice.description}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
                         <Button
-                          variant="ghost"
+                          variant="secondary"
                           className=""
                           onClick={() => {
                             if (isPlaying && audioRef.current) {

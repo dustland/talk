@@ -13,15 +13,15 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
   try {
-    const { text } = await request.json();
+    const { text, voice } = await request.json();
 
     if (!text) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
     const mp3 = await openai.audio.speech.create({
-      model: "tts-1", // or "tts-1-hd" for higher quality
-      voice: "shimmer", // Options: 'alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'
+      model: "tts-1",
+      voice: voice || "nova",
       input: text,
     });
 
