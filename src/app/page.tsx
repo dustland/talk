@@ -37,6 +37,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Question {
   id: number;
@@ -94,7 +100,7 @@ export default function HomePage() {
   const [transcriptionInterval, setTranscriptionInterval] = useState<number>(5);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [mode, setMode] = useState<"practice" | "learn">("practice");
+  const [mode, setMode] = useState<"practice" | "learn">("learn");
   const { completion, complete } = useCompletion({
     api: "/api/completion",
   });
@@ -484,7 +490,7 @@ export default function HomePage() {
     <div className="container mx-auto p-4 space-y-6 text-white min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <CardTitle className="flex items-center gap-2 font-semibold">
+        <CardTitle className="flex items-center gap-4">
           <Image
             src="/talk.svg"
             alt="Talk"
@@ -492,15 +498,19 @@ export default function HomePage() {
             height={32}
             className="w-6 h-6 md:w-8 md:h-8"
           />
-          <span className="text-lg md:text-xl hidden md:block">Talk</span>
-          <div className="flex items-center gap-2 text-white bg-indigo-500 px-3 py-1 rounded-full">
+          <span className="text-lg md:text-lg hidden md:block">Talk</span>
+          <div className="flex items-center gap-2 text-white bg-indigo-500/80 border border-indigo-400 px-3 py-1 rounded-full">
             <Timer className="h-4 w-4" />
-            <span className="font-mono text-sm">{formatTime(timeElapsed)}</span>
+            <span className="font-mono font-bold text-sm">
+              {formatTime(timeElapsed)}
+            </span>
           </div>
         </CardTitle>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 text-sm">
-            <span>{mode === "learn" ? "Learn" : "Practice"}</span>
+            <span>
+              {mode === "learn" ? "Learn by example" : "Practice mode"}
+            </span>
             <IconSwitch
               Icon={Sparkles}
               checked={mode === "practice"}
@@ -762,18 +772,6 @@ export default function HomePage() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold">Reference Answer</h4>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          className=""
-                          onClick={() => {
-                            navigator.clipboard.writeText(
-                              `Question: ${currentQuestion?.question}\n\n${evaluation.reference}`
-                            );
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                          <span className="hidden md:block">Copy</span>
-                        </Button>
                         <Select
                           value={selectedVoice}
                           onValueChange={setSelectedVoice}
@@ -825,6 +823,24 @@ export default function HomePage() {
                             {isPlaying ? "Stop Playing" : "Listen"}
                           </span>
                         </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(
+                                    `Question: ${currentQuestion?.question}\n\n${evaluation.reference}`
+                                  );
+                                }}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy to clipboard</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                     <p className="text-white/80">{evaluation.reference}</p>
