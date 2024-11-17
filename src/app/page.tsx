@@ -490,7 +490,7 @@ export default function HomePage() {
     <div className="container mx-auto p-4 space-y-6 text-white min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <CardTitle className="flex items-center gap-4">
+        <CardTitle className="flex items-center gap-2">
           <Image
             src="/talk.svg"
             alt="Talk"
@@ -499,7 +499,7 @@ export default function HomePage() {
             className="w-6 h-6 md:w-8 md:h-8"
           />
           <span className="text-lg md:text-lg hidden md:block">Talk</span>
-          <div className="flex items-center gap-2 text-white bg-indigo-500/80 border border-indigo-400 px-3 py-1 rounded-full">
+          <div className="flex items-center gap-2 text-white bg-indigo-500/80 border border-indigo-400 px-3 py-1 rounded-full ml-2">
             <Timer className="h-4 w-4" />
             <span className="font-mono font-bold text-sm">
               {formatTime(timeElapsed)}
