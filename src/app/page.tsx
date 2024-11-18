@@ -18,6 +18,7 @@ import {
   Notebook,
   Sparkles,
   RotateCw,
+  Share2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -45,6 +46,14 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { useSearchParams, useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface Question {
   id: number;
@@ -107,6 +116,10 @@ export default function HomePage() {
     api: "/api/completion",
   });
   const [selectedVoice, setSelectedVoice] = useState<string>("onyx");
+  const searchParams = useSearchParams();
+  const questionId = searchParams.get("q");
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const router = useRouter();
 
   // Fetch a random question based on the selected part
   const fetchRandomQuestion = async (part: number) => {
@@ -132,9 +145,37 @@ export default function HomePage() {
 
   // Fetch initial question when the component mounts or selectedPart changes
   useEffect(() => {
-    const part = parseInt(selectedPart.replace("part", ""));
-    fetchRandomQuestion(part);
-  }, [selectedPart]);
+    const fetchQuestion = async () => {
+      try {
+        setIsLoadingQuestion(true);
+
+        // Modify the URL based on whether we have a questionId
+        const url = questionId
+          ? `/api/questions/${questionId}`
+          : `/api/questions/random?part=${selectedPart.replace("part", "")}`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch question");
+        }
+
+        const data = await response.json();
+        setCurrentQuestion(data);
+      } catch (error) {
+        console.error("Error fetching question:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch question. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingQuestion(false);
+      }
+    };
+
+    fetchQuestion();
+  }, [selectedPart, questionId]);
 
   // Update the timer when recording
   useEffect(() => {
@@ -424,14 +465,29 @@ export default function HomePage() {
   }, []);
 
   // Handle getting a new question
-  const handleNewQuestion = () => {
+  const handleNewQuestion = async () => {
     const part = parseInt(selectedPart.replace("part", ""));
     setCurrentQuestion(null);
-    fetchRandomQuestion(part);
     setEvaluation(null);
     setTranscript("");
     setTimeElapsed(0);
     setIsRecording(false);
+
+    try {
+      const response = await fetch(`/api/questions/random?part=${part}`);
+      if (!response.ok) throw new Error("Failed to fetch question");
+      const data = await response.json();
+      setCurrentQuestion(data);
+      // Update URL with new question ID
+      router.push(`/?q=${data.id}`);
+    } catch (error) {
+      console.error("Error fetching question:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load question. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Format the time elapsed
@@ -484,6 +540,11 @@ export default function HomePage() {
     } finally {
       setIsLoadingReference(false);
     }
+  };
+
+  const getShareableUrl = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/?q=${currentQuestion?.id}`;
   };
 
   return (
@@ -594,24 +655,33 @@ export default function HomePage() {
                     </Badge>
                   )}
                 </div>
-                <Button
-                  onClick={handleNewQuestion}
-                  variant="secondary"
-                  className=""
-                  disabled={isLoadingQuestion}
-                >
-                  {isLoadingQuestion ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="hidden md:block">Loading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RotateCw className="h-4 w-4" />
-                      <span className="hidden md:block">Change</span>
-                    </>
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleNewQuestion}
+                    variant="secondary"
+                    disabled={isLoadingQuestion}
+                  >
+                    {isLoadingQuestion ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="hidden md:block">Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RotateCw className="h-4 w-4" />
+                        <span className="hidden md:block">Change</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => setShowShareDialog(true)}
+                    variant="ghost"
+                    size="icon"
+                    disabled={!currentQuestion}
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <p className="font-bold mb-4 md:text-lg">
                 {currentQuestion?.question || "Loading question..."}
@@ -797,25 +867,6 @@ export default function HomePage() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold">Reference Answer</h4>
                       <div className="flex items-center gap-2">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="shrink-0"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    `Question: ${currentQuestion?.question}\n\n${evaluation.reference}`
-                                  );
-                                }}
-                              >
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Copy to clipboard</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
                         <Select
                           value={selectedVoice}
                           onValueChange={setSelectedVoice}
@@ -873,6 +924,25 @@ export default function HomePage() {
                               : "Play"}
                           </span>
                         </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(
+                                    `Question: ${currentQuestion?.question}\n\n${evaluation.reference}`
+                                  );
+                                }}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy to clipboard</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                     <p className="text-white/80">{evaluation.reference}</p>
@@ -883,6 +953,32 @@ export default function HomePage() {
           )}
         </TabsContent>
       </Tabs>
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Question</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center space-x-2">
+            <Input readOnly value={getShareableUrl()} className="select-all" />
+            <Button
+              type="submit"
+              size="sm"
+              className="px-3"
+              onClick={() => {
+                navigator.clipboard.writeText(getShareableUrl());
+                toast({
+                  title: "Question Link Copied!",
+                  description:
+                    "Link copied to clipboard. You can share it with your friends",
+                });
+                setShowShareDialog(false);
+              }}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
