@@ -71,7 +71,8 @@ export default function UserPage() {
       {/* Date Range */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-white/70">
-          Statistics from {metrics.first_active} to {metrics.last_active}
+          Statistics from {new Date(metrics.first_active).toLocaleDateString()}{" "}
+          to {new Date(metrics.last_active).toLocaleDateString()}
         </div>
         {/* Time Range Selector */}
         <Select
