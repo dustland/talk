@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +19,8 @@ import {
   Sparkles,
   RotateCw,
   Share2,
+  User,
+  Settings,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -54,6 +56,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { Loading } from "@/components/loading";
 
 interface Question {
   id: number;
@@ -80,7 +84,7 @@ const VOICE_OPTIONS: VoiceOption[] = [
   { id: "shimmer", name: "Shimmer", description: "Clear and precise" },
 ];
 
-export default function HomePage() {
+function PageContent() {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [selectedPart, setSelectedPart] = useState<"part1" | "part2" | "part3">(
@@ -558,6 +562,7 @@ export default function HomePage() {
             width={32}
             height={32}
             className="w-6 h-6 md:w-8 md:h-8"
+            priority
           />
           <span className="text-lg md:text-lg hidden md:block">Talk</span>
           <div className="flex items-center gap-2 text-white bg-indigo-500/80 border border-indigo-400 px-3 py-1 rounded-full ml-2">
@@ -566,6 +571,9 @@ export default function HomePage() {
               {formatTime(timeElapsed)}
             </span>
           </div>
+          <Link href="/user" className="text-white/80 hover:text-white p-1">
+            <Settings className="h-4 w-4" />
+          </Link>
         </CardTitle>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 text-sm">
@@ -980,5 +988,13 @@ export default function HomePage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <PageContent />
+    </Suspense>
   );
 }

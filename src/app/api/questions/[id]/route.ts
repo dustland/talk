@@ -1,30 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { supabase } from "@/utils/supabase";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Response> {
   try {
+    const id = (await params).id;
+
     const { data, error } = await supabase
       .from("questions")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (error) {
       console.error("Error fetching question:", error);
-      return NextResponse.json(
+      return Response.json(
         { error: "Failed to fetch question" },
         { status: 500 }
       );
     }
 
     if (!data) {
-      return NextResponse.json(
-        { error: "Question not found" },
-        { status: 404 }
-      );
+      return Response.json({ error: "Question not found" }, { status: 404 });
     }
 
     // Format the response
@@ -38,10 +37,10 @@ export async function GET(
       cue_card_points: data.cue_card_points,
     };
 
-    return NextResponse.json(question);
+    return Response.json(question);
   } catch (error) {
     console.error("Unexpected error:", error);
-    return NextResponse.json(
+    return Response.json(
       { error: "Failed to fetch question" },
       { status: 500 }
     );
