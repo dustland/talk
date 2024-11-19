@@ -63,11 +63,12 @@ export default function UserPage() {
   ];
 
   if (isLoading) return <Loading />;
+
   if (error) return <Error message={error} />;
   if (!metrics) return <Error message="No data available" />;
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full">
+    <div className="flex flex-col gap-4 w-full h-full min-h-[calc(100vh-120px)]">
       {/* Date Range */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-white/70">

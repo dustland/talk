@@ -26,7 +26,7 @@ export default function HomePage() {
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          <Card className="bg-card/20 backdrop-blur-sm border-primary/20">
+          <Card className="bg-card/5 backdrop-blur-sm border-primary/5 hover:bg-card/10 transition-colors">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Mic className="h-5 w-5" />
@@ -46,7 +46,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/20 backdrop-blur-sm border-primary/20">
+          <Card className="bg-card/5 backdrop-blur-sm border-primary/5 hover:bg-card/10 transition-colors">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Book className="h-5 w-5" />
@@ -66,7 +66,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/20 backdrop-blur-sm border-primary/20">
+          <Card className="bg-card/5 backdrop-blur-sm border-primary/5 hover:bg-card/10 transition-colors">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Star className="h-5 w-5" />

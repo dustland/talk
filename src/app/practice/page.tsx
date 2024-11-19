@@ -466,7 +466,7 @@ function PageContent() {
   }, []);
 
   // Handle getting a new question
-  const handleNewQuestion = async () => {
+  const handleChangeQuestion = async () => {
     const part = parseInt(selectedPart.replace("part", ""));
     setCurrentQuestion(null);
     setEvaluation(null);
@@ -480,7 +480,7 @@ function PageContent() {
       const data = await response.json();
       setCurrentQuestion(data);
       // Update URL with new question ID
-      router.push(`/?q=${data.id}`);
+      router.push(`/practice?q=${data.id}`);
     } catch (error) {
       console.error("Error fetching question:", error);
       toast({
@@ -648,7 +648,7 @@ function PageContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={handleNewQuestion}
+                    onClick={handleChangeQuestion}
                     variant="secondary"
                     disabled={isLoadingQuestion}
                   >

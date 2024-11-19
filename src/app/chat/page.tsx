@@ -6,7 +6,7 @@ import { ItemType } from "@openai/realtime-api-beta/dist/lib/client.js";
 import { WavRecorder, WavStreamPlayer } from "@/lib/wavtools";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Phone, PhoneOff } from "lucide-react";
+import { AudioWaveform, AlarmClock, Mic, MicOff } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RealtimeEvent } from "@/types/realtime";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const LOCAL_RELAY_SERVER_URL: string =
   process.env.NEXT_PUBLIC_LOCAL_RELAY_SERVER_URL || "";
 
@@ -53,11 +54,10 @@ const VoiceDropdown = ({ value, onChange, disabled }: VoiceDropdownProps) => {
 
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="text-white font-medium">
-        <SelectValue placeholder="Select a voice">
+      <SelectTrigger className="text-white font-medium border-white/20 rounded-md">
+        <SelectValue placeholder="Select a voice" asChild>
           <div className="flex items-center px-2">
-            {getVoiceIcon(value)}
-            <span className="capitalize">Examiner: {value}</span>
+            <span className="capitalize">{value}</span>
           </div>
         </SelectValue>
       </SelectTrigger>
@@ -81,6 +81,33 @@ const VoiceDropdown = ({ value, onChange, disabled }: VoiceDropdownProps) => {
         ))}
       </SelectContent>
     </Select>
+  );
+};
+
+const Timer = () => {
+  const [time, setTime] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime((prevTime) => prevTime + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  return (
+    <div className="absolute flex items-center gap-2 top-2 right-2 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full text-white font-mono text-base">
+      <AlarmClock className="w-4 h-4" />
+      {formatTime(time)}
+    </div>
   );
 };
 
@@ -280,21 +307,37 @@ At the end of the test, provide a detailed assessment report in markdown format 
   }, [items]);
 
   return (
-    <div className="container">
-      <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl min-h-[calc(100vh-120px)] flex flex-col justify-center">
+    <div className="flex h-full w-full">
+      <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl flex flex-col w-full justify-center">
+        {isConnected && <Timer />}
         <CardContent className="p-4 space-y-4">
-          <div className="flex flex-col items-center justify-between gap-4">
-            <h1 className="text-xl font-bold text-white mt-4">
-              Speaking with AI Examiner
-            </h1>
-            <div className="flex items-center">
-              <VoiceDropdown
-                value={currentVoice}
-                onChange={setCurrentVoice}
-                disabled={isConnected}
-              />
+          {!isConnected && (
+            <div className="flex flex-col items-center justify-between gap-4">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+                <AudioWaveform className="h-12 w-12" />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center">
+                  <VoiceDropdown
+                    value={currentVoice}
+                    onChange={setCurrentVoice}
+                    disabled={isConnected}
+                  />
+                </div>
+              </div>
+              <span className="text-lg md:text-lg font-bold text-white whitespace-nowrap">
+                AI Examiner for IELTS Speaking
+              </span>
+
+              <div className="flex items-center justify-center">
+                <span className="text-white/50 text-center max-w-[80%]">
+                  <span className="capitalize">{currentVoice}</span> will
+                  conduct the test and provide a detailed assessment report.
+                  Please click the button to start the test.
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex justify-center items-center ">
             <Button
@@ -309,16 +352,22 @@ At the end of the test, provide a detailed assessment report in markdown format 
               )}
             >
               {isConnected ? (
-                <PhoneOff className="w-6 h-6" />
+                <MicOff className="w-6 h-6" />
               ) : (
-                <Phone className="w-6 h-6" />
+                <Mic className="w-6 h-6" />
               )}
-              {isConnected ? "End Chat" : "Start Chat"}
+              {isConnected ? (
+                "End Conversation"
+              ) : (
+                <span className="capitalize">
+                  Start Test with {currentVoice}
+                </span>
+              )}
             </Button>
           </div>
 
           {isConnected && (
-            <ScrollArea className="h-[70vh] pr-4">
+            <ScrollArea className="h-[calc(100vh-10rem)] pr-4">
               <div className="space-y-4">
                 {items.map((item) => (
                   <div

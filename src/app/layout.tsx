@@ -32,8 +32,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="bg-gradient-to-r from-indigo-500 to-indigo-900 min-h-screen">
-          <div className="container mx-auto p-4 min-h-screen flex flex-col">
+        <div className="bg-gradient-to-r from-indigo-500 to-indigo-900 h-screen">
+          <div className="container mx-auto p-4 h-full w-full flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2">
@@ -53,7 +53,9 @@ export default function RootLayout({
                 <Nav />
               </div>
             </div>
-            <div className="flex-1 mt-6 text-white">{children}</div>
+            <div className="flex-1 mt-2 text-white h-full w-full">
+              {children}
+            </div>
           </div>
         </div>
         <Toaster />
