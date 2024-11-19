@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Icons } from "./icons";
 
 export function Nav() {
   const pathname = usePathname();
@@ -26,6 +27,12 @@ export function Nav() {
           {item.label}
         </Link>
       ))}
+      <Link
+        href="https://github.com/dustland/talk"
+        className="text-white/70 hover:text-white transition-colors ml-2"
+      >
+        <Icons.gitHub className="w-5 h-5" />
+      </Link>
     </div>
   );
 }

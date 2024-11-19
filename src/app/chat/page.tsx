@@ -18,7 +18,7 @@ import { User2, Users2, Mic2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
+import { RealtimeEvent } from "@/types/realtime";
 const LOCAL_RELAY_SERVER_URL: string =
   process.env.NEXT_PUBLIC_LOCAL_RELAY_SERVER_URL || "";
 
@@ -261,6 +261,12 @@ At the end of the test, provide a detailed assessment report in markdown format 
         }
       }
     );
+
+    client.on("realtime.event", (realtimeEvent: RealtimeEvent) => {
+      if (realtimeEvent.event.type === "response.done") {
+        console.log("Response done:", realtimeEvent.event.response);
+      }
+    });
 
     return () => {
       client.reset();
