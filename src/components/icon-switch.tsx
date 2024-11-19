@@ -69,7 +69,7 @@ const IconSwitch = React.forwardRef<
                 `peer inline-flex ${classes.root} shrink-0 cursor-pointer items-center rounded-full transition-colors`,
                 "border-2 border-transparent shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 "focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
-                checked ? "bg-primary" : "bg-input",
+                checked ? "bg-green-600" : "bg-black/20",
                 className
               )}
               checked={checked}
@@ -79,15 +79,16 @@ const IconSwitch = React.forwardRef<
             >
               <SwitchPrimitives.Thumb
                 className={cn(
-                  `pointer-events-none relative flex items-center justify-center ${classes.thumb} rounded-full bg-background`,
+                  `pointer-events-none relative flex items-center justify-center ${classes.thumb} rounded-full`,
                   "shadow-lg ring-0 transition-transform",
-                  checked ? classes.translate : "translate-x-0"
+                  checked ? classes.translate : "translate-x-0",
+                  checked ? "bg-green-900" : "bg-black/20"
                 )}
               >
                 {checked ? (
-                  <CheckedIcon className={`${classes.icon} text-primary`} />
+                  <CheckedIcon className={`${classes.icon} text-white/80`} />
                 ) : (
-                  <Icon className={`${classes.icon} text-primary`} />
+                  <Icon className={`${classes.icon} text-white/80`} />
                 )}
               </SwitchPrimitives.Thumb>
             </SwitchPrimitives.Root>

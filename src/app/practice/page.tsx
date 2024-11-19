@@ -19,6 +19,7 @@ import {
   Sparkles,
   RotateCw,
   Share2,
+  GraduationCap,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -112,7 +113,7 @@ function PageContent() {
   const [transcriptionInterval, setTranscriptionInterval] = useState<number>(5);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [mode, setMode] = useState<"practice" | "learn">("learn");
+  const [mode, setMode] = useState<"practice" | "cheat">("practice");
   const { completion, complete } = useCompletion({
     api: "/api/completion",
   });
@@ -501,7 +502,7 @@ function PageContent() {
   };
 
   useEffect(() => {
-    if (mode === "learn" && completion) {
+    if (mode === "cheat" && completion) {
       setEvaluation({
         ...evaluation!,
         reference: completion,
@@ -549,37 +550,35 @@ function PageContent() {
   };
 
   return (
-    <div className="container mx-auto space-y-6 text-white min-h-[calc(100vh-120px)]">
+    <div className="space-y-6 text-white min-h-[calc(100vh-var(--header-height))]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 text-sm">
+            <IconSwitch
+              Icon={Speech}
+              CheckedIcon={GraduationCap}
+              size="md"
+              checked={mode === "cheat"}
+              onCheckedChange={(checked) =>
+                setMode(checked ? "cheat" : "practice")
+              }
+              tooltip={
+                mode === "practice"
+                  ? "Practice speaking and get evaluation"
+                  : "Get reference answer by example"
+              }
+            />
             <span
               className={cn(
                 mode === "practice" && "text-indigo-200",
                 "font-bold"
               )}
             >
-              Learn
-            </span>
-            <IconSwitch
-              Icon={Sparkles}
-              CheckedIcon={Speech}
-              size="md"
-              checked={mode === "practice"}
-              onCheckedChange={(checked) =>
-                setMode(checked ? "practice" : "learn")
-              }
-              tooltip={
-                mode === "learn"
-                  ? "Get reference answer by example"
-                  : "Practice speaking and get evaluation"
-              }
-            />
-            <span
-              className={cn(mode === "learn" && "text-indigo-200", "font-bold")}
-            >
-              Practice
+              Cheat Mode{" "}
+              {mode === "practice"
+                ? "Off: Practice speaking"
+                : "On: Learn from Reference Answer"}
             </span>
           </div>
         </div>
@@ -709,7 +708,7 @@ function PageContent() {
           <div className="flex items-center gap-2 justify-center">
             <Button
               size="lg"
-              className={`bg-green-600 hover:bg-green-500 text-white text-base w-full md:w-auto py-4`}
+              className={`bg-green-600 hover:bg-green-700 text-white text-base w-full md:w-auto py-4 rounded-full transition-colors duration-300`}
               disabled={isEvaluating}
               onClick={
                 mode === "practice"
@@ -722,26 +721,26 @@ function PageContent() {
               {mode === "practice" &&
                 (isEvaluating ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                     Evaluating your answer...
                   </>
                 ) : isRecording ? (
                   <>
-                    <Square className="mr-2 h-5 w-5" />
+                    <Square className="h-5 w-5" />
                     Submit for evaluation
                   </>
                 ) : (
                   <>
-                    <Mic className="mr-2 h-5 w-5" />
+                    <Mic className="h-5 w-5" />
                     Answer this question
                   </>
                 ))}
-              {mode === "learn" && (
+              {mode === "cheat" && (
                 <>
                   {isLoadingReference ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <Sparkles className="mr-2 h-5 w-5" />
+                    <Sparkles className="h-5 w-5" />
                   )}
                   Get Reference Answer
                 </>

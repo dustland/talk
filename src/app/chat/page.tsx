@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RealtimeEvent } from "@/types/realtime";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const LOCAL_RELAY_SERVER_URL: string =
   process.env.NEXT_PUBLIC_LOCAL_RELAY_SERVER_URL || "";
 
@@ -54,7 +53,7 @@ const VoiceDropdown = ({ value, onChange, disabled }: VoiceDropdownProps) => {
 
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="text-white font-medium border-white/20 rounded-md">
+      <SelectTrigger className="text-white border-white/20 ">
         <SelectValue placeholder="Select a voice" asChild>
           <div className="flex items-center px-2">
             <span className="capitalize">{value}</span>
@@ -133,7 +132,7 @@ Part 3: Two-way discussion
 - Use get_random_question tool with part=3 to get follow-up questions related to Part 2
 - Ask ONE question at a time and wait for response
 
-Evaluate the candidate's:
+Evaluate the candidate's and provide feedback in well-structured markdown format:
 - Fluency and coherence
 - Lexical resource
 - Grammatical range and accuracy
@@ -248,6 +247,7 @@ At the end of the test, provide a detailed assessment report in markdown format 
     const wavStreamPlayer = wavStreamPlayerRef.current;
 
     client.on("conversation.updated", async ({ item, delta }: any) => {
+      // console.log("Conversation updated:", item, delta);
       const items = client.conversation.getItems();
       if (delta?.audio) {
         wavStreamPlayer.add16BitPCM(delta.audio, item.id);
@@ -289,10 +289,28 @@ At the end of the test, provide a detailed assessment report in markdown format 
       }
     );
 
-    client.on("realtime.event", (realtimeEvent: RealtimeEvent) => {
+    client.on("realtime.event", async (realtimeEvent: RealtimeEvent) => {
       if (realtimeEvent.event.type === "response.done") {
-        console.log("Response done:", realtimeEvent.event.response);
+        console.log("Response done:", realtimeEvent);
+        await fetch("/api/user/metrics", {
+          method: "POST",
+          body: JSON.stringify(realtimeEvent),
+        })
+          .then((response) => {
+            console.log("Logged event:", response);
+          })
+          .catch((error: any) => {
+            console.error("Error logging event:", error);
+          });
       }
+
+      // Log other event types if needed
+      // if (realtimeEvent.event.type === "error") {
+      //   await fetch("/api/user/metrics", {
+      //     method: "POST",
+      //     body: JSON.stringify(realtimeEvent),
+      //   });
+      // }
     });
 
     return () => {
@@ -307,113 +325,107 @@ At the end of the test, provide a detailed assessment report in markdown format 
   }, [items]);
 
   return (
-    <div className="flex h-full w-full">
-      <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl flex flex-col w-full justify-center">
-        {isConnected && <Timer />}
-        <CardContent className="p-4 space-y-4">
-          {!isConnected && (
-            <div className="flex flex-col items-center justify-between gap-4">
-              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                <AudioWaveform className="h-12 w-12" />
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <VoiceDropdown
-                    value={currentVoice}
-                    onChange={setCurrentVoice}
-                    disabled={isConnected}
-                  />
-                </div>
-              </div>
-              <span className="text-lg md:text-lg font-bold text-white whitespace-nowrap">
-                AI Examiner for IELTS Speaking
-              </span>
-
-              <div className="flex items-center justify-center">
-                <span className="text-white/50 text-center max-w-[80%]">
-                  <span className="capitalize">{currentVoice}</span> will
-                  conduct the test and provide a detailed assessment report.
-                  Please click the button to start the test.
-                </span>
+    <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl flex flex-col w-full justify-center min-h-[calc(100vh-6rem)]">
+      {isConnected && <Timer />}
+      <CardContent className="p-4 space-y-4">
+        {!isConnected && (
+          <div className="flex flex-col items-center justify-between gap-4">
+            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+              <AudioWaveform className="h-12 w-12" />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                <VoiceDropdown
+                  value={currentVoice}
+                  onChange={setCurrentVoice}
+                  disabled={isConnected}
+                />
               </div>
             </div>
-          )}
+            <span className="text-lg md:text-lg font-bold text-white whitespace-nowrap">
+              AI Examiner for IELTS Speaking
+            </span>
 
-          <div className="flex justify-center items-center ">
-            <Button
-              onClick={isConnected ? disconnectSession : connectSession}
-              variant={isConnected ? "destructive" : "default"}
-              size="lg"
-              className={cn(
-                "w-48 rounded-full flex items-center justify-center p-4",
-                isConnected
-                  ? "bg-red-500 hover:bg-red-600"
-                  : "bg-green-500 hover:bg-green-600"
-              )}
-            >
-              {isConnected ? (
-                <MicOff className="w-6 h-6" />
-              ) : (
-                <Mic className="w-6 h-6" />
-              )}
-              {isConnected ? (
-                "End Conversation"
-              ) : (
-                <span className="capitalize">
-                  Start Test with {currentVoice}
-                </span>
-              )}
-            </Button>
+            <div className="flex items-center justify-center">
+              <span className="text-white/50 text-center max-w-[80%]">
+                <span className="capitalize">{currentVoice}</span> will conduct
+                the test and provide a detailed assessment report. Please click
+                the button to start the test.
+              </span>
+            </div>
           </div>
+        )}
 
-          {isConnected && (
-            <ScrollArea className="h-[calc(100vh-10rem)] pr-4">
-              <div className="space-y-4">
-                {items.map((item) => (
+        <div className="flex justify-center items-center ">
+          <Button
+            onClick={isConnected ? disconnectSession : connectSession}
+            variant={isConnected ? "destructive" : "default"}
+            size="lg"
+            className={cn(
+              "w-48 rounded-full flex items-center justify-center p-4 transition-colors duration-500",
+              isConnected
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-green-600 hover:bg-green-700"
+            )}
+          >
+            {isConnected ? (
+              <MicOff className="w-6 h-6" />
+            ) : (
+              <Mic className="w-6 h-6" />
+            )}
+            {isConnected ? (
+              "End Conversation"
+            ) : (
+              <span className="capitalize">Start Test with {currentVoice}</span>
+            )}
+          </Button>
+        </div>
+
+        {isConnected && (
+          <ScrollArea className="h-[calc(100vh-10rem)] pr-4">
+            <div className="space-y-4">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className={`flex ${
+                    item.role === "assistant" ? "justify-start" : "justify-end"
+                  }`}
+                >
                   <div
-                    key={item.id}
-                    className={`flex ${
+                    className={`p-4 rounded-lg max-w-[90%] ${
                       item.role === "assistant"
-                        ? "justify-start"
-                        : "justify-end"
+                        ? "bg-primary/20 text-white rounded-tr-lg rounded-br-lg rounded-bl-lg rounded-tl-sm"
+                        : "bg-secondary/20 text-white rounded-tl-lg rounded-bl-lg rounded-br-lg rounded-tr-sm"
                     }`}
                   >
-                    <div
-                      className={`p-4 rounded-lg max-w-[90%] ${
-                        item.role === "assistant"
-                          ? "bg-primary/20 text-white rounded-tr-lg rounded-br-lg rounded-bl-lg rounded-tl-sm"
-                          : "bg-secondary/20 text-white rounded-tl-lg rounded-bl-lg rounded-br-lg rounded-tr-sm"
-                      }`}
-                    >
-                      <div className="font-bold mb-2 flex items-center gap-2">
-                        {item.role === "assistant" ? (
-                          <>
-                            <User2 className="h-4 w-4" />
-                            <span>Examiner</span>
-                          </>
-                        ) : (
-                          <>
-                            <Mic2 className="h-4 w-4" />
-                            <span>You</span>
-                          </>
-                        )}
-                      </div>
-                      <div>
-                        {item.formatted.transcript || (
-                          <ReactMarkdown>
-                            {item.formatted.text || "(processing...)"}
-                          </ReactMarkdown>
-                        )}
-                      </div>
+                    <div className="font-bold mb-2 flex items-center gap-2">
+                      {item.role === "assistant" ? (
+                        <>
+                          <User2 className="h-4 w-4" />
+                          <span>Examiner</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mic2 className="h-4 w-4" />
+                          <span>You</span>
+                        </>
+                      )}
+                    </div>
+                    <div>
+                      {item.formatted.transcript || (
+                        <ReactMarkdown>
+                          {item.formatted.text || "(processing...)"}
+                        </ReactMarkdown>
+                      )}
                     </div>
                   </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -11,6 +11,9 @@ importers:
       '@ai-sdk/openai':
         specifier: ^0.0.72
         version: 0.0.72(zod@3.23.8)
+      '@helicone/helpers':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@openai/realtime-api-beta':
         specifier: https://github.com/openai/openai-realtime-api-beta.git
         version: https://codeload.github.com/openai/openai-realtime-api-beta/tar.gz/a5cb94824f625423858ebacb9f769226ca98945f
@@ -300,6 +303,9 @@ packages:
 
   '@floating-ui/utils@0.2.8':
     resolution: {integrity: sha512-kym7SodPp8/wloecOpcmSnWJsK7M0E5Wg8UcFA+uO4B9s5d0ywXOEro/8HM9x0rW+TljRzul/14UYz3TleT3ig==}
+
+  '@helicone/helpers@1.0.0':
+    resolution: {integrity: sha512-YZDGIsOe19+tADpM4ggOPsS3RmapjM8BHfaFBcpfOsNtedU/YGUmqK03wtVHjPZu0PHE9QHR/bXhiVlmTPCtvQ==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -3340,6 +3346,8 @@ snapshots:
       react-dom: 19.0.0-rc-66855b96-20241106(react@19.0.0-rc-66855b96-20241106)
 
   '@floating-ui/utils@0.2.8': {}
+
+  '@helicone/helpers@1.0.0': {}
 
   '@humanfs/core@0.19.1': {}
 

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Link from "next/link";
 import Image from "next/image";
 import { Nav } from "@/components/nav";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -28,14 +29,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      style={{ "--header-height": "3rem" } as React.CSSProperties}
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="bg-gradient-to-r from-indigo-500 to-indigo-900 h-screen">
-          <div className="container mx-auto p-4 h-full w-full flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col h-screen bg-gradient-to-r from-indigo-500 to-indigo-900">
+          {/* Fixed Header */}
+          <header className="z-50 fixed top-0 left-0 right-0 h-[var(--header-height)]">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-indigo-500/20 backdrop-blur-lg" />
+
+            {/* Header content */}
+            <div className="relative z-10 flex items-center justify-between h-full mx-auto container px-4">
               <Link href="/" className="flex items-center gap-2">
                 <Image
                   src="/talk.svg"
@@ -53,10 +61,16 @@ export default function RootLayout({
                 <Nav />
               </div>
             </div>
-            <div className="flex-1 mt-2 text-white h-full w-full">
-              {children}
-            </div>
-          </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="flex-1 pt-[var(--header-height)]">
+            <ScrollArea className="h-[calc(100vh-var(--header-height))]">
+              <div className="container mx-auto p-4 min-h-[calc(100vh-var(--header-height))] flex flex-col">
+                {children}
+              </div>
+            </ScrollArea>
+          </main>
         </div>
         <Toaster />
       </body>

@@ -44,7 +44,7 @@ const CustomTooltip = ({
   return null;
 };
 
-export default function UserPage() {
+export default function AccountPage() {
   const [timeRange, setTimeRange] = useState<
     "24h" | "7d" | "30d" | "month" | "all"
   >("month");
@@ -68,7 +68,7 @@ export default function UserPage() {
   if (!metrics) return <Error message="No data available" />;
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full min-h-[calc(100vh-120px)]">
+    <div className="flex flex-col gap-4 w-full h-full">
       {/* Date Range */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-white/70">
@@ -80,10 +80,10 @@ export default function UserPage() {
           value={timeRange}
           onValueChange={(value: any) => setTimeRange(value)}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] text-white/80">
             <SelectValue placeholder="Select time range" />
           </SelectTrigger>
-          <SelectContent className="bg-white/30 backdrop-blur-lg">
+          <SelectContent className="text-white/80 bg-white/30 backdrop-blur-lg">
             {timeRangeOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -193,7 +193,7 @@ export default function UserPage() {
           <CardHeader>
             <CardTitle className="text-white">Daily Cost (USD)</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={metrics?.daily_metrics}
@@ -216,7 +216,12 @@ export default function UserPage() {
                   tickLine={{ stroke: "#fff" }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="cost" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="cost"
+                  fill="#82ca9d"
+                  radius={[4, 4, 0, 0]}
+                  activeBar={{ fill: "#a7e9c3" }} // Lighter shade for hover
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

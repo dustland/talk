@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AggregatedUserRequest, UserMetrics } from "@/types/stats";
+import { HeliconeManualLogger } from "@helicone/helpers";
 interface HeliconeRequest {
   response_id: string;
   response_created_at: string;
@@ -16,6 +17,72 @@ interface HeliconeRequest {
   completion_tokens: number | null;
   prompt_tokens: number | null;
   costUSD: number | null;
+}
+
+const logger = new HeliconeManualLogger({
+  apiKey: process.env.HELICONE_API_KEY || "",
+  headers: {
+    "Helicone-Property-Model": "gpt-4o-realtime-preview",
+    "Helicone-Property-Temperature": "0.6",
+    "Helicone-User-Id": "talk@dustland.ai",
+    "Helicone-Property-Provider": "openai",
+    "Helicone-Property-App": "talk",
+  },
+});
+
+export async function POST(request: NextRequest) {
+  const { event } = await request.json();
+  try {
+    const result = await logger.logRequest(
+      {
+        model: "gpt-4o-realtime-preview",
+        temperature: 0.6,
+        messages: [
+          {
+            role: "user",
+            content: "(audio transcription)",
+          },
+        ],
+        properties: {
+          eventType: event.type,
+          sessionId: event.id,
+        },
+      },
+      async (resultRecorder) => {
+        resultRecorder.appendResults({
+          model: "gpt-4o-realtime-preview",
+          status: "success",
+          choices: event.response.output.map((choice: any) => {
+            return {
+              message: {
+                role: choice.role,
+                content: choice.content[0].transcript, // TODO: fix this
+              },
+            };
+          }),
+          created: event.time,
+          usage: {
+            prompt_tokens: event.response.usage.input_tokens,
+            completion_tokens: event.response.usage.output_tokens,
+            total_tokens: event.response.usage.total_tokens,
+          },
+        });
+        return event;
+      },
+      {
+        "Helicone-Session-Id": event.id,
+        "Helicone-Property-Event-Type": event.type,
+        "Helicone-Property-Session-Id": event.id,
+      }
+    );
+    return NextResponse.json({ result });
+  } catch (error) {
+    console.error("Error logging request:", error);
+    return NextResponse.json(
+      { error: "Failed to log request" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function GET(request: NextRequest) {

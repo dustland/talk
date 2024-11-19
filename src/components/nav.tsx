@@ -9,30 +9,30 @@ export function Nav() {
   const pathname = usePathname();
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-4 md:gap-6">
       {[
-        { label: "Home", href: "/" },
         { label: "Chat", href: "/chat" },
         { label: "Practice", href: "/practice" },
-        { label: "Account", href: "/account" },
+        { label: <Icons.settings className="w-5 h-5" />, href: "/account" },
       ].map((item) => (
         <Link
           key={item.href}
           href={item.href}
           className={cn(
-            "text-white/70 hover:text-white transition-colors w-16 md:w-20 text-center",
-            pathname === item.href && "text-white font-bold"
+            "text-white/70 hover:text-white transition-colors text-center font-bold",
+            pathname === item.href && "text-white"
           )}
         >
           {item.label}
         </Link>
       ))}
-      <Link
+      {/* <Link
         href="https://github.com/dustland/talk"
-        className="text-white/70 hover:text-white transition-colors ml-2"
+        target="_blank"
+        className="text-white/70 hover:text-white transition-colors"
       >
         <Icons.gitHub className="w-5 h-5" />
-      </Link>
+      </Link> */}
     </div>
   );
 }
