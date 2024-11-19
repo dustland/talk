@@ -147,36 +147,6 @@ At the end of the test, provide a detailed assessment report in markdown format 
   );
   // TODO: Replace with relay server for security reasons
 
-  const connectSession = useCallback(async () => {
-    const client = clientRef.current;
-    const wavRecorder = wavRecorderRef.current;
-    const wavStreamPlayer = wavStreamPlayerRef.current;
-
-    setItems([]);
-
-    await wavRecorder.begin();
-    await wavStreamPlayer.connect();
-    await client.connect();
-
-    client.updateSession({
-      voice: currentVoice,
-      instructions,
-      temperature: 0.7,
-      input_audio_transcription: { model: "whisper-1" },
-      turn_detection: { type: "server_vad", silence_duration_ms: 3000 },
-    });
-
-    client.sendUserMessageContent([
-      {
-        type: "input_text",
-        text: "Hello.",
-      },
-    ]);
-
-    setIsConnected(true);
-    await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-  }, [currentVoice]);
-
   const disconnectSession = useCallback(async () => {
     setIsConnected(false);
 
@@ -192,6 +162,59 @@ At the end of the test, provide a detailed assessment report in markdown format 
     const wavStreamPlayer = wavStreamPlayerRef.current;
     await wavStreamPlayer.interrupt();
   }, []);
+  const connectSession = useCallback(async () => {
+    const client = clientRef.current;
+    const wavRecorder = wavRecorderRef.current;
+    const wavStreamPlayer = wavStreamPlayerRef.current;
+
+    setItems([]);
+
+    try {
+      await wavRecorder.begin();
+      await wavStreamPlayer.connect();
+      await client.connect();
+
+      client.updateSession({
+        voice: currentVoice,
+        instructions,
+        temperature: 0.6,
+        input_audio_transcription: { model: "whisper-1" },
+        turn_detection: { type: "server_vad", silence_duration_ms: 3000 },
+      });
+
+      client.sendUserMessageContent([
+        {
+          type: "input_text",
+          text: "Hello. I'm ready to start the test.",
+        },
+      ]);
+
+      setIsConnected(true);
+
+      // Add error handling for audio streaming
+      await wavRecorder.record((data) => {
+        try {
+          if (client.isConnected()) {
+            // Add method to check connection status
+            client.appendInputAudio(data.mono);
+          } else {
+            console.log("Client disconnected, stopping audio stream");
+            wavRecorder.end();
+            setIsConnected(false);
+          }
+        } catch (error: any) {
+          console.error("Error sending audio data:", error);
+          // Optionally disconnect if there's a critical error
+          if (error.message.includes("connection closed")) {
+            disconnectSession();
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error in connect session:", error);
+      await disconnectSession();
+    }
+  }, [currentVoice, disconnectSession]);
 
   useEffect(() => {
     const client = clientRef.current;
@@ -251,8 +274,8 @@ At the end of the test, provide a detailed assessment report in markdown format 
   }, [items]);
 
   return (
-    <div className="container mx-auto min-h-[calc(100vh-120px)]">
-      <Card className="bg-white/10 backdrop-blur-lg text-white flex-1 border-white/40 shadow-xl">
+    <div className="container">
+      <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl min-h-[calc(100vh-120px)] flex flex-col justify-center">
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col items-center justify-between gap-4">
             <h1 className="text-xl font-bold text-white mt-4">
@@ -288,48 +311,52 @@ At the end of the test, provide a detailed assessment report in markdown format 
             </Button>
           </div>
 
-          <ScrollArea className="h-[70vh] pr-4">
-            <div className="space-y-4">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className={`flex ${
-                    item.role === "assistant" ? "justify-start" : "justify-end"
-                  }`}
-                >
+          {isConnected && (
+            <ScrollArea className="h-[70vh] pr-4">
+              <div className="space-y-4">
+                {items.map((item) => (
                   <div
-                    className={`p-4 rounded-lg max-w-[90%] ${
+                    key={item.id}
+                    className={`flex ${
                       item.role === "assistant"
-                        ? "bg-primary/20 text-white rounded-tr-lg rounded-br-lg rounded-bl-lg rounded-tl-sm"
-                        : "bg-secondary/20 text-white rounded-tl-lg rounded-bl-lg rounded-br-lg rounded-tr-sm"
+                        ? "justify-start"
+                        : "justify-end"
                     }`}
                   >
-                    <div className="font-bold mb-2 flex items-center gap-2">
-                      {item.role === "assistant" ? (
-                        <>
-                          <User2 className="h-4 w-4" />
-                          <span>Examiner</span>
-                        </>
-                      ) : (
-                        <>
-                          <Mic2 className="h-4 w-4" />
-                          <span>You</span>
-                        </>
-                      )}
-                    </div>
-                    <div>
-                      {item.formatted.transcript || (
-                        <ReactMarkdown>
-                          {item.formatted.text || "(processing...)"}
-                        </ReactMarkdown>
-                      )}
+                    <div
+                      className={`p-4 rounded-lg max-w-[90%] ${
+                        item.role === "assistant"
+                          ? "bg-primary/20 text-white rounded-tr-lg rounded-br-lg rounded-bl-lg rounded-tl-sm"
+                          : "bg-secondary/20 text-white rounded-tl-lg rounded-bl-lg rounded-br-lg rounded-tr-sm"
+                      }`}
+                    >
+                      <div className="font-bold mb-2 flex items-center gap-2">
+                        {item.role === "assistant" ? (
+                          <>
+                            <User2 className="h-4 w-4" />
+                            <span>Examiner</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mic2 className="h-4 w-4" />
+                            <span>You</span>
+                          </>
+                        )}
+                      </div>
+                      <div>
+                        {item.formatted.transcript || (
+                          <ReactMarkdown>
+                            {item.formatted.text || "(processing...)"}
+                          </ReactMarkdown>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+          )}
         </CardContent>
       </Card>
     </div>
