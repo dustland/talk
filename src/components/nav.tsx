@@ -13,13 +13,13 @@ export function Nav() {
         { label: "Home", href: "/" },
         { label: "Chat", href: "/chat" },
         { label: "Practice", href: "/practice" },
-        { label: "User", href: "/user" },
+        { label: "Account", href: "/account" },
       ].map((item) => (
         <Link
           key={item.href}
           href={item.href}
           className={cn(
-            "text-white/70 hover:text-white transition-colors w-20 text-center",
+            "text-white/70 hover:text-white transition-colors w-16 md:w-20 text-center",
             pathname === item.href && "text-white font-bold"
           )}
         >

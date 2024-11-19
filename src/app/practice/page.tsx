@@ -19,11 +19,8 @@ import {
   Sparkles,
   RotateCw,
   Share2,
-  User,
-  Settings,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
   Accordion,
@@ -552,21 +549,22 @@ function PageContent() {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6 text-white min-h-screen">
+    <div className="container mx-auto space-y-6 text-white min-h-[calc(100vh-120px)]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 text-sm">
             <span
               className={cn(
-                mode === "practice" && "text-indigo-500",
-                "font-medium"
+                mode === "practice" && "text-indigo-200",
+                "font-bold"
               )}
             >
               Learn
             </span>
             <IconSwitch
               Icon={Sparkles}
+              CheckedIcon={Speech}
               size="md"
               checked={mode === "practice"}
               onCheckedChange={(checked) =>
@@ -579,10 +577,7 @@ function PageContent() {
               }
             />
             <span
-              className={cn(
-                mode === "learn" && "text-indigo-500",
-                "font-medium"
-              )}
+              className={cn(mode === "learn" && "text-indigo-200", "font-bold")}
             >
               Practice
             </span>

@@ -87,7 +87,7 @@ const VoiceDropdown = ({ value, onChange, disabled }: VoiceDropdownProps) => {
 export default function PracticePage() {
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [currentVoice, setCurrentVoice] = useState<Voice>(Voice.ALLOY);
+  const [currentVoice, setCurrentVoice] = useState<Voice>(Voice.SAGE);
 
   const instructions = `You are an IELTS speaking examiner. Your name is ${currentVoice}. Conduct a natural IELTS speaking test conversation by asking ONE question at a time and waiting for the candidate's response.
 
@@ -161,9 +161,48 @@ At the end of the test, provide a detailed assessment report in markdown format 
     client.updateSession({
       voice: currentVoice,
       instructions,
-      temperature: 0.4,
+      temperature: 0.7,
       input_audio_transcription: { model: "whisper-1" },
       turn_detection: { type: "server_vad", silence_duration_ms: 3000 },
+    });
+
+    client.sendUserMessageContent([
+      {
+        type: "input_text",
+        text: "Hello.",
+      },
+    ]);
+
+    setIsConnected(true);
+    await wavRecorder.record((data) => client.appendInputAudio(data.mono));
+  }, [currentVoice]);
+
+  const disconnectSession = useCallback(async () => {
+    setIsConnected(false);
+
+    const client = clientRef.current;
+    client.disconnect();
+    // client.reset();
+
+    const wavRecorder = wavRecorderRef.current;
+    if (wavRecorder.recording) {
+      await wavRecorder.end();
+    }
+
+    const wavStreamPlayer = wavStreamPlayerRef.current;
+    await wavStreamPlayer.interrupt();
+  }, []);
+
+  useEffect(() => {
+    const client = clientRef.current;
+    const wavStreamPlayer = wavStreamPlayerRef.current;
+
+    client.on("conversation.updated", async ({ item, delta }: any) => {
+      const items = client.conversation.getItems();
+      if (delta?.audio) {
+        wavStreamPlayer.add16BitPCM(delta.audio, item.id);
+      }
+      setItems(items);
     });
 
     client.addTool(
@@ -200,49 +239,6 @@ At the end of the test, provide a detailed assessment report in markdown format 
       }
     );
 
-    client.sendUserMessageContent([
-      {
-        type: "input_text",
-        text: "Hello.",
-      },
-    ]);
-
-    setIsConnected(true);
-    await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-  }, [currentVoice]);
-
-  const disconnectSession = useCallback(async () => {
-    setIsConnected(false);
-
-    const client = clientRef.current;
-    client.disconnect();
-    client.reset();
-
-    const wavRecorder = wavRecorderRef.current;
-    await wavRecorder.end();
-
-    const wavStreamPlayer = wavStreamPlayerRef.current;
-    await wavStreamPlayer.interrupt();
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      disconnectSession();
-    };
-  }, []);
-
-  useEffect(() => {
-    const client = clientRef.current;
-    const wavStreamPlayer = wavStreamPlayerRef.current;
-
-    client.on("conversation.updated", async ({ item, delta }: any) => {
-      const items = client.conversation.getItems();
-      if (delta?.audio) {
-        wavStreamPlayer.add16BitPCM(delta.audio, item.id);
-      }
-      setItems(items);
-    });
-
     return () => {
       client.reset();
     };
@@ -255,7 +251,7 @@ At the end of the test, provide a detailed assessment report in markdown format 
   }, [items]);
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto min-h-[calc(100vh-120px)]">
       <Card className="bg-white/10 backdrop-blur-lg text-white flex-1 border-white/40 shadow-xl">
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col items-center justify-between gap-4">
@@ -292,7 +288,7 @@ At the end of the test, provide a detailed assessment report in markdown format 
             </Button>
           </div>
 
-          <ScrollArea className="h-[60vh] pr-4">
+          <ScrollArea className="h-[70vh] pr-4">
             <div className="space-y-4">
               {items.map((item) => (
                 <div

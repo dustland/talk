@@ -13,6 +13,7 @@ import {
 interface IconSwitchProps
   extends React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> {
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  CheckedIcon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   size?: "sm" | "md" | "lg";
@@ -48,6 +49,7 @@ const IconSwitch = React.forwardRef<
     {
       className,
       Icon,
+      CheckedIcon,
       checked,
       onCheckedChange,
       size = "md",
@@ -82,7 +84,11 @@ const IconSwitch = React.forwardRef<
                   checked ? classes.translate : "translate-x-0"
                 )}
               >
-                <Icon className={`${classes.icon} text-primary`} />
+                {checked ? (
+                  <CheckedIcon className={`${classes.icon} text-primary`} />
+                ) : (
+                  <Icon className={`${classes.icon} text-primary`} />
+                )}
               </SwitchPrimitives.Thumb>
             </SwitchPrimitives.Root>
           </TooltipTrigger>
