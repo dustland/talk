@@ -821,7 +821,14 @@ function PageContent() {
                       </div>
                       <Progress
                         value={(criterion.value / 9) * 100}
-                        className="h-2 bg-white/30"
+                        className={cn(
+                          "h-2 bg-white/30 rounded-full [&>div]:rounded-full",
+                          criterion.value < 5 && "[&>div]:bg-red-600",
+                          criterion.value >= 5 &&
+                            criterion.value < 6.5 &&
+                            "[&>div]:bg-yellow-600",
+                          criterion.value >= 6.5 && "[&>div]:bg-green-700"
+                        )}
                       />
                     </div>
                   ))}
