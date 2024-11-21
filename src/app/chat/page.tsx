@@ -113,7 +113,7 @@ const Timer = () => {
 export default function PracticePage() {
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [currentVoice, setCurrentVoice] = useState<Voice>(Voice.SAGE);
+  const [currentVoice, setCurrentVoice] = useState<Voice>(Voice.BALLAD);
 
   const instructions = `You are an IELTS speaking examiner. Your name is ${currentVoice}. Conduct a natural IELTS speaking test conversation by asking ONE question at a time and waiting for the candidate's response.
 
