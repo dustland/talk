@@ -32,13 +32,6 @@ import {
 import { IconSwitch } from "@/components/icon-switch";
 import { useCompletion } from "ai/react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -54,8 +47,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
 import { Loading } from "@/components/loading";
+import { VoiceSelect } from "@/components/voice-select";
 
 interface Question {
   id: number;
@@ -66,64 +59,6 @@ interface Question {
   follow_up_questions: string[] | null;
   cue_card_points: string[] | null;
 }
-
-export interface Voice {
-  id: string;
-  label: string;
-  description: string;
-  tags: string[];
-}
-
-export const OPENAI_VOICES: Voice[] = [
-  {
-    id: 'alloy',
-    label: 'Alloy',
-    description: 'A versatile, neutral voice with a natural tone',
-    tags: ['neutral', 'professional', 'male'],
-  },
-  {
-    id: 'echo',
-    label: 'Echo',
-    description: 'A warm and rounded voice with a friendly demeanor',
-    tags: ['warm', 'casual', 'male'],
-  },
-  {
-    id: 'shimmer',
-    label: 'Shimmer',
-    description: 'A clear and precise voice with excellent articulation',
-    tags: ['professional', 'neutral', 'female'],
-  },
-  {
-    id: 'ash',
-    label: 'Ash',
-    description: 'A steady and composed voice with subtle warmth',
-    tags: ['neutral', 'professional', 'male'],
-  },
-  {
-    id: 'ballad',
-    label: 'Ballad',
-    description: 'A melodic and engaging voice with gentle expression',
-    tags: ['warm', 'casual', 'female'],
-  },
-  {
-    id: 'coral',
-    label: 'Coral',
-    description: 'A bright and vibrant voice with natural enthusiasm',
-    tags: ['warm', 'casual', 'female'],
-  },
-  {
-    id: 'sage',
-    label: 'Sage',
-    description: 'A thoughtful and measured voice with calm clarity',
-    tags: ['neutral', 'professional', 'male'],
-  },
-  {
-    id: 'verse',
-    label: 'Verse',
-    description: 'An expressive and dynamic voice with artistic flair',
-    tags: ['warm', 'casual', 'female'],
-  },
-];
 
 function PageContent() {
   const { toast } = useToast();
@@ -160,7 +95,7 @@ function PageContent() {
   const { completion, complete } = useCompletion({
     api: "/api/completion",
   });
-  const [selectedVoice, setSelectedVoice] = useState<string>("shimmer");
+  const [selectedVoice, setSelectedVoice] = useState<string>("");
   const searchParams = useSearchParams();
   const questionId = searchParams.get("q");
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -909,36 +844,10 @@ function PageContent() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold">Reference Answer</h4>
                       <div className="flex items-center gap-2">
-                        <Select
+                        <VoiceSelect
                           value={selectedVoice}
                           onValueChange={setSelectedVoice}
-                        >
-                          <SelectTrigger className="bg-white/10 border-white/20">
-                            <Speech className="h-4 w-4 mr-2" />
-                            <SelectValue>
-                              <span className="hidden md:block">
-                                {
-                                  OPENAI_VOICES.find(
-                                    (v) => v.id === selectedVoice
-                                  )?.label
-                                }
-                              </span>
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {OPENAI_VOICES.map((voice) => (
-                              <SelectItem key={voice.id} value={voice.id}>
-                                <div className="flex flex-col">
-                                  <span>{voice.label}</span>
-                                  <span className="text-xs text-primary/60">
-                                    {voice.description}
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
+                        />
                         <Button
                           variant="secondary"
                           className="shrink-0"

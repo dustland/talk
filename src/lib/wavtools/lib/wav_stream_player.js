@@ -8,12 +8,13 @@ import { AudioAnalysis } from './analysis/audio_analysis.js';
 export class WavStreamPlayer {
   /**
    * Creates a new WavStreamPlayer instance
-   * @param {{sampleRate?: number}} options
+   * @param {{sampleRate?: number, onAudioData?: Function}} options
    * @returns {WavStreamPlayer}
    */
-  constructor({ sampleRate = 44100 } = {}) {
+  constructor({ sampleRate = 44100, onAudioData } = {}) {
     this.scriptSrc = StreamProcessorSrc;
     this.sampleRate = sampleRate;
+    this.onAudioData = onAudioData;
     this.context = null;
     this.stream = null;
     this.analyser = null;
@@ -117,6 +118,11 @@ export class WavStreamPlayer {
     } else {
       throw new Error(`argument must be Int16Array or ArrayBuffer`);
     }
+    
+    if (this.onAudioData) {
+      this.onAudioData(buffer);
+    }
+    
     this.stream.port.postMessage({ event: 'write', buffer, trackId });
     return buffer;
   }

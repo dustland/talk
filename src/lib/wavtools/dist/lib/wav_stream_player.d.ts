@@ -5,11 +5,12 @@
 export class WavStreamPlayer {
     /**
      * Creates a new WavStreamPlayer instance
-     * @param {{sampleRate?: number}} options
+     * @param {{sampleRate?: number, onAudioData?: (data: any) => void}} options
      * @returns {WavStreamPlayer}
      */
-    constructor({ sampleRate }?: {
+    constructor({ sampleRate, onAudioData }?: {
         sampleRate?: number;
+        onAudioData?: (data: any) => void;
     });
     scriptSrc: any;
     sampleRate: number;

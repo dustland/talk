@@ -6,114 +6,24 @@ import { ItemType } from "@openai/realtime-api-beta/dist/lib/client.js";
 import { WavRecorder, WavStreamPlayer } from "@/lib/wavtools";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AudioWaveform, AlarmClock, Mic, MicOff } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { User2, Users2, Mic2 } from "lucide-react";
+import { AudioWaveform, Mic, MicOff } from "lucide-react";
+import { User2, Mic2 } from "lucide-react";
+import { WaveformAnimation } from "@/components/waveform-animation";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RealtimeEvent } from "@/types/realtime";
+import { VoiceSelect } from "@/components/voice-select";
+import { Timer } from '@/components/timer';
+
 const LOCAL_RELAY_SERVER_URL: string =
   process.env.NEXT_PUBLIC_LOCAL_RELAY_SERVER_URL || "";
-
-enum Voice {
-  ALLOY = "alloy",
-  SHIMMER = "shimmer",
-  ECHO = "echo",
-  BALLAD = "ballad",
-  CORAL = "coral",
-  SAGE = "sage",
-  VERSE = "verse",
-  ASH = "ash",
-}
-
-interface VoiceDropdownProps {
-  value: Voice;
-  onChange: (value: Voice) => void;
-  disabled: boolean;
-}
-
-const VoiceDropdown = ({ value, onChange, disabled }: VoiceDropdownProps) => {
-  const getVoiceIcon = (voice: string) => {
-    switch (voice) {
-      case Voice.ALLOY:
-      case Voice.ECHO:
-      case Voice.SHIMMER:
-        return <User2 className="h-4 w-4 mr-2" />;
-      default:
-        return <Users2 className="h-4 w-4 mr-2" />;
-    }
-  };
-
-  return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="text-white border-white/20 ">
-        <SelectValue placeholder="Select a voice" asChild>
-          <div className="flex items-center px-2">
-            <span className="capitalize">{value}</span>
-          </div>
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {[
-          Voice.ALLOY,
-          Voice.SHIMMER,
-          Voice.ECHO,
-          Voice.BALLAD,
-          Voice.CORAL,
-          Voice.SAGE,
-          Voice.VERSE,
-          Voice.ASH,
-        ].map((voice) => (
-          <SelectItem key={voice} value={voice}>
-            <div className="flex items-center">
-              {getVoiceIcon(voice)}
-              <span className="capitalize">{voice}</span>
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-};
-
-const Timer = () => {
-  const [time, setTime] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime((prevTime) => prevTime + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  return (
-    <div className="absolute flex items-center gap-2 top-2 right-2 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full text-white font-mono text-base">
-      <AlarmClock className="w-4 h-4" />
-      {formatTime(time)}
-    </div>
-  );
-};
 
 export default function PracticePage() {
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [currentVoice, setCurrentVoice] = useState<Voice>(Voice.BALLAD);
+  const [currentVoice, setCurrentVoice] = useState<string>('ballad');
+  const [audioData, setAudioData] = useState<Float32Array>();
 
   const instructions = `You are an IELTS speaking examiner. Your name is ${currentVoice}. Conduct a natural IELTS speaking test conversation by asking ONE question at a time and waiting for the candidate's response.
 
@@ -191,7 +101,11 @@ At the end of the test, provide a detailed assessment report in markdown format 
   const connectSession = useCallback(async () => {
     const client = clientRef.current;
     const wavRecorder = wavRecorderRef.current;
-    const wavStreamPlayer = wavStreamPlayerRef.current;
+    const wavStreamPlayer = new WavStreamPlayer({
+      onAudioData: (data: Float32Array) => {
+        setAudioData(data);
+      },
+    });
 
     setItems([]);
 
@@ -201,7 +115,7 @@ At the end of the test, provide a detailed assessment report in markdown format 
       await client.connect();
 
       client.updateSession({
-        voice: currentVoice,
+        voice: currentVoice as any,
         instructions,
         temperature: 0.6,
         input_audio_transcription: { model: "whisper-1" },
@@ -328,16 +242,16 @@ At the end of the test, provide a detailed assessment report in markdown format 
     <Card className="bg-white/10 backdrop-blur-lg text-white border-white/40 shadow-xl flex flex-col w-full justify-center min-h-[calc(100vh-6rem)]">
       {isConnected && <Timer />}
       <CardContent className="p-4 space-y-4">
-        {!isConnected && (
+        {!isConnected ? (
           <div className="flex flex-col items-center justify-between gap-4">
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
               <AudioWaveform className="h-12 w-12" />
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center">
-                <VoiceDropdown
+                <VoiceSelect
                   value={currentVoice}
-                  onChange={setCurrentVoice}
+                  onValueChange={setCurrentVoice}
                   disabled={isConnected}
                 />
               </div>
@@ -354,9 +268,11 @@ At the end of the test, provide a detailed assessment report in markdown format 
               </span>
             </div>
           </div>
+        ) : (
+          <></>
         )}
 
-        <div className="flex justify-center items-center ">
+        <div className="flex justify-center items-center">
           <Button
             onClick={isConnected ? disconnectSession : connectSession}
             variant={isConnected ? "destructive" : "default"}
@@ -369,7 +285,7 @@ At the end of the test, provide a detailed assessment report in markdown format 
             )}
           >
             {isConnected ? (
-              <MicOff className="w-6 h-6" />
+              <WaveformAnimation className="w-6 h-6 text-white" audioData={audioData} />
             ) : (
               <Mic className="w-6 h-6" />
             )}
