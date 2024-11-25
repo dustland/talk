@@ -67,19 +67,62 @@ interface Question {
   cue_card_points: string[] | null;
 }
 
-interface VoiceOption {
+export interface Voice {
   id: string;
-  name: string;
+  label: string;
   description: string;
+  tags: string[];
 }
 
-const VOICE_OPTIONS: VoiceOption[] = [
-  { id: "alloy", name: "Alloy", description: "Neutral and balanced" },
-  { id: "echo", name: "Echo", description: "Warm and rounded" },
-  { id: "fable", name: "Fable", description: "British accent" },
-  { id: "onyx", name: "Onyx", description: "Deep and authoritative" },
-  { id: "nova", name: "Nova", description: "Energetic and bright" },
-  { id: "shimmer", name: "Shimmer", description: "Clear and precise" },
+export const OPENAI_VOICES: Voice[] = [
+  {
+    id: 'alloy',
+    label: 'Alloy',
+    description: 'A versatile, neutral voice with a natural tone',
+    tags: ['neutral', 'professional', 'male'],
+  },
+  {
+    id: 'echo',
+    label: 'Echo',
+    description: 'A warm and rounded voice with a friendly demeanor',
+    tags: ['warm', 'casual', 'male'],
+  },
+  {
+    id: 'shimmer',
+    label: 'Shimmer',
+    description: 'A clear and precise voice with excellent articulation',
+    tags: ['professional', 'neutral', 'female'],
+  },
+  {
+    id: 'ash',
+    label: 'Ash',
+    description: 'A steady and composed voice with subtle warmth',
+    tags: ['neutral', 'professional', 'male'],
+  },
+  {
+    id: 'ballad',
+    label: 'Ballad',
+    description: 'A melodic and engaging voice with gentle expression',
+    tags: ['warm', 'casual', 'female'],
+  },
+  {
+    id: 'coral',
+    label: 'Coral',
+    description: 'A bright and vibrant voice with natural enthusiasm',
+    tags: ['warm', 'casual', 'female'],
+  },
+  {
+    id: 'sage',
+    label: 'Sage',
+    description: 'A thoughtful and measured voice with calm clarity',
+    tags: ['neutral', 'professional', 'male'],
+  },
+  {
+    id: 'verse',
+    label: 'Verse',
+    description: 'An expressive and dynamic voice with artistic flair',
+    tags: ['warm', 'casual', 'female'],
+  },
 ];
 
 function PageContent() {
@@ -117,7 +160,7 @@ function PageContent() {
   const { completion, complete } = useCompletion({
     api: "/api/completion",
   });
-  const [selectedVoice, setSelectedVoice] = useState<string>("onyx");
+  const [selectedVoice, setSelectedVoice] = useState<string>("shimmer");
   const searchParams = useSearchParams();
   const questionId = searchParams.get("q");
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -545,6 +588,9 @@ function PageContent() {
   };
 
   const getShareableUrl = () => {
+    if (typeof window === "undefined") {
+      return "";
+    }
     const baseUrl = window.location.origin;
     return `${baseUrl}/?q=${currentQuestion?.id}`;
   };
@@ -571,14 +617,13 @@ function PageContent() {
             />
             <span
               className={cn(
-                mode === "practice" && "text-indigo-200",
+                mode === "practice" ? "text-purple-200" : "text-indigo-200",
                 "font-bold"
               )}
             >
-              Cheat Mode{" "}
               {mode === "practice"
-                ? "Off: Practice speaking"
-                : "On: Learn from Reference Answer"}
+                ? "Practice Speaking"
+                : "Get Reference Answer"}
             </span>
           </div>
         </div>
@@ -873,18 +918,18 @@ function PageContent() {
                             <SelectValue>
                               <span className="hidden md:block">
                                 {
-                                  VOICE_OPTIONS.find(
+                                  OPENAI_VOICES.find(
                                     (v) => v.id === selectedVoice
-                                  )?.name
+                                  )?.label
                                 }
                               </span>
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {VOICE_OPTIONS.map((voice) => (
+                            {OPENAI_VOICES.map((voice) => (
                               <SelectItem key={voice.id} value={voice.id}>
                                 <div className="flex flex-col">
-                                  <span>{voice.name}</span>
+                                  <span>{voice.label}</span>
                                   <span className="text-xs text-primary/60">
                                     {voice.description}
                                   </span>
