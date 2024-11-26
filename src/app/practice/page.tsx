@@ -738,8 +738,12 @@ function PageContent() {
               </h3>
               <Textarea
                 className="text-white placeholder:text-white/80"
-                value={transcript}
-                onChange={(e) => setTranscript(e.target.value)}
+                value={mode === "practice" ? transcript : transcript || ""}
+                onChange={(e) => {
+                  if (mode === "cheat") {
+                    setTranscript(e.target.value);
+                  }
+                }}
                 rows={mode === "practice" ? 6 : 2}
                 placeholder={
                   mode === "practice"
