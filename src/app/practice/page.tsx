@@ -64,7 +64,7 @@ function PageContent() {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [selectedPart, setSelectedPart] = useState<"part1" | "part2" | "part3">(
-    "part2"
+    "part1"
   );
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
@@ -91,11 +91,11 @@ function PageContent() {
   const [transcriptionInterval, setTranscriptionInterval] = useState<number>(5);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [mode, setMode] = useState<"practice" | "cheat">("practice");
+  const [mode, setMode] = useState<"practice" | "cheat">("cheat");
   const { completion, complete } = useCompletion({
     api: "/api/completion",
   });
-  const [selectedVoice, setSelectedVoice] = useState<string>("");
+  const [selectedVoice, setSelectedVoice] = useState<string>("echo");
   const searchParams = useSearchParams();
   const questionId = searchParams.get("q");
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -506,8 +506,7 @@ function PageContent() {
       });
       console.log("Generating reference answer", currentQuestion, selectedPart);
       await complete(
-        `IELTS Speaking Test - Part ${currentQuestion?.part}: ${
-          currentQuestion?.question
+        `IELTS Speaking Test - Part ${currentQuestion?.part}: ${currentQuestion?.question
         }${transcript ? `\n\nPrompts: ${transcript}` : ""}`
       );
     } catch (error) {
@@ -809,8 +808,8 @@ function PageContent() {
                           "h-2 bg-white/30 rounded-full [&>div]:rounded-full",
                           criterion.value < 5 && "[&>div]:bg-red-600",
                           criterion.value >= 5 &&
-                            criterion.value < 6.5 &&
-                            "[&>div]:bg-yellow-600",
+                          criterion.value < 6.5 &&
+                          "[&>div]:bg-yellow-600",
                           criterion.value >= 6.5 && "[&>div]:bg-green-700"
                         )}
                       />
@@ -875,8 +874,8 @@ function PageContent() {
                             {isPlaying
                               ? "Stop"
                               : isProcessingTTS
-                              ? "Generating..."
-                              : "Play"}
+                                ? "Generating..."
+                                : "Play"}
                           </span>
                         </Button>
                         <TooltipProvider>
