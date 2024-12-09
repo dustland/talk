@@ -6,7 +6,13 @@ import { Loading } from "@/components/loading";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Question = {
   id: string;
@@ -43,11 +49,13 @@ export default function QuestionsPage() {
     fetchQuestions();
   }, []);
 
-  const topics = Array.from(new Set(questions.map(q => q.topic))).sort();
-  
-  const filteredQuestions = questions.filter(question => {
-    const partMatch = selectedPart === "all" || question.part.toString() === selectedPart;
-    const topicMatch = selectedTopic === "all" || question.topic === selectedTopic;
+  const topics = Array.from(new Set(questions.map((q) => q.topic))).sort();
+
+  const filteredQuestions = questions.filter((question) => {
+    const partMatch =
+      selectedPart === "all" || question.part.toString() === selectedPart;
+    const topicMatch =
+      selectedTopic === "all" || question.topic === selectedTopic;
     return partMatch && topicMatch;
   });
 
@@ -59,7 +67,7 @@ export default function QuestionsPage() {
         <h1 className="text-3xl font-bold text-white">Questions</h1>
         <div className="flex gap-4">
           <Select value={selectedPart} onValueChange={setSelectedPart}>
-            <SelectTrigger className="w-[140px] bg-card/5 backdrop-blur-sm border-white/5 text-white">
+            <SelectTrigger className="bg-card/5 backdrop-blur-sm border-white/5 text-white">
               <SelectValue placeholder="Select part" />
             </SelectTrigger>
             <SelectContent>
@@ -70,13 +78,15 @@ export default function QuestionsPage() {
             </SelectContent>
           </Select>
           <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-            <SelectTrigger className="w-[180px] bg-card/5 backdrop-blur-sm border-white/5 text-white">
+            <SelectTrigger className="bg-card/5 backdrop-blur-sm border-white/5 text-white">
               <SelectValue placeholder="Select topic" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Topics</SelectItem>
-              {topics.map(topic => (
-                <SelectItem key={topic} value={topic}>{topic}</SelectItem>
+              {topics.map((topic) => (
+                <SelectItem key={topic} value={topic}>
+                  {topic}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -84,7 +94,10 @@ export default function QuestionsPage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredQuestions.map((question) => (
-          <Card key={question.id} className="bg-card/5 backdrop-blur-sm border-primary/5 hover:bg-card/10 transition-colors">
+          <Card
+            key={question.id}
+            className="bg-card/5 backdrop-blur-sm border-primary/5 hover:bg-card/10 transition-colors"
+          >
             <CardHeader>
               <CardTitle className="text-lg text-white">
                 Part {question.part} - {question.topic}
