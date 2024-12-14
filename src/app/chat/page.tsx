@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { RealtimeEvent } from "@/types/realtime";
 import { VoiceSelect } from "@/components/voice-select";
 import { Timer } from "@/components/timer";
+import { toast } from "@/hooks/use-toast";
 
 const LOCAL_RELAY_SERVER_URL: string =
   process.env.NEXT_PUBLIC_LOCAL_RELAY_SERVER_URL || "";
@@ -198,7 +199,12 @@ At the end of the test, provide a detailed assessment report in markdown format 
           console.log("Fetched random question", question);
           return question;
         } catch (error) {
-          console.error("Error fetching random question:", error);
+          console.warn("Error fetching random question:", error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch random question. Please try again.",
+            variant: "destructive",
+          });
           throw error;
         }
       }
