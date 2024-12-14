@@ -340,11 +340,11 @@ At the end of the test, provide a detailed assessment report in markdown format 
                       )}
                     </div>
                     <div>
-                      {item.formatted.transcript || (
-                        <ReactMarkdown>
-                          {item.formatted.text || "(processing...)"}
-                        </ReactMarkdown>
-                      )}
+                      <ReactMarkdown>
+                        {item.formatted.transcript ||
+                          item.formatted.text ||
+                          "(transcribing...)"}
+                      </ReactMarkdown>
                     </div>
                   </div>
                 </div>
