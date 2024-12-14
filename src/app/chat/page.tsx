@@ -219,6 +219,14 @@ At the end of the test, provide a detailed assessment report in markdown format 
           });
       }
 
+      client.on("conversation.interrupted", async () => {
+        const trackSampleOffset = await wavStreamPlayer.interrupt();
+        if (trackSampleOffset?.trackId) {
+          const { trackId, offset } = trackSampleOffset;
+          await client.cancelResponse(trackId, offset);
+        }
+      });
+
       // Log other event types if needed
       // if (realtimeEvent.event.type === "error") {
       //   await fetch("/api/user/metrics", {
