@@ -62,10 +62,10 @@ export default function QuestionsPage() {
   if (isLoading) return <Loading />;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-white">Questions</h1>
-        <div className="flex gap-4">
+    <div className="container mx-auto h-[calc(100vh-4rem)] flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <h1 className="lg:text-3xl font-bold text-white">Questions</h1>
+        <div className="flex gap-2">
           <Select value={selectedPart} onValueChange={setSelectedPart}>
             <SelectTrigger className="bg-card/5 backdrop-blur-sm border-white/5 text-white">
               <SelectValue placeholder="Select part" />
@@ -92,28 +92,26 @@ export default function QuestionsPage() {
           </Select>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredQuestions.map((question) => (
-          <Card
-            key={question.id}
-            className="bg-card/5 backdrop-blur-sm border-primary/5 hover:bg-card/10 transition-colors"
-          >
-            <CardHeader>
-              <CardTitle className="text-lg text-white">
-                Part {question.part} - {question.topic}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white/80 mb-4">{question.question}</p>
-              <Link href={`/practice?q=${question.id}`}>
-                <Button variant="outline" className="w-full group">
-                  Practice This Question
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          {filteredQuestions.map((question) => (
+            <Link key={question.id} href={`/practice?q=${question.id}`}>
+              <Card
+                key={question.id}
+                className="bg-card/5 backdrop-blur-sm border-primary/5 hover:bg-card/10 transition-colors"
+              >
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">
+                    Part {question.part} - {question.topic}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2">
+                  <p className="text-white/80">{question.question}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
