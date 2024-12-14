@@ -74,7 +74,16 @@ export class WavStreamPlayer {
    * @private
    * @returns {Promise<true>}
    */
-  _start() {
+  async _start() {
+    if (!this.context) {
+      await this.connect();
+    }
+    
+    // Ensure context is running
+    if (this.context.state === 'suspended') {
+      await this.context.resume();
+    }
+    
     const streamNode = new AudioWorkletNode(this.context, 'stream_processor');
     streamNode.connect(this.context.destination);
     streamNode.port.onmessage = (e) => {
@@ -99,16 +108,16 @@ export class WavStreamPlayer {
    * You can add chunks beyond the current play point and they will be queued for play
    * @param {ArrayBuffer|Int16Array} arrayBuffer
    * @param {string} [trackId]
-   * @returns {Int16Array}
+   * @returns {Promise<Int16Array>}
    */
-  add16BitPCM(arrayBuffer, trackId = 'default') {
+  async add16BitPCM(arrayBuffer, trackId = 'default') {
     if (typeof trackId !== 'string') {
       throw new Error(`trackId must be a string`);
     } else if (this.interruptedTrackIds[trackId]) {
       return;
     }
     if (!this.stream) {
-      this._start();
+      await this._start();
     }
     let buffer;
     if (arrayBuffer instanceof Int16Array) {

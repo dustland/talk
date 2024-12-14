@@ -322,6 +322,10 @@ export class WavRecorder {
     }
 
     const context = new AudioContext({ sampleRate: this.sampleRate });
+    // Ensure context is running
+    if (context.state === 'suspended') {
+      await context.resume();
+    }
     const source = context.createMediaStreamSource(this.stream);
     // Load and execute the module script.
     try {
@@ -329,6 +333,10 @@ export class WavRecorder {
     } catch (e) {
       console.error(e);
       throw new Error(`Could not add audioWorklet module: ${this.scriptSrc}`);
+    }
+    // Ensure context is still running after module load
+    if (context.state === 'suspended') {
+      await context.resume();
     }
     const processor = new AudioWorkletNode(context, 'audio_processor');
     processor.port.onmessage = (e) => {

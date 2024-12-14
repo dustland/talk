@@ -14,7 +14,7 @@ import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RealtimeEvent } from "@/types/realtime";
 import { VoiceSelect } from "@/components/voice-select";
-import { Timer } from '@/components/timer';
+import { Timer } from "@/components/timer";
 
 const LOCAL_RELAY_SERVER_URL: string =
   process.env.NEXT_PUBLIC_LOCAL_RELAY_SERVER_URL || "";
@@ -22,7 +22,7 @@ const LOCAL_RELAY_SERVER_URL: string =
 export default function PracticePage() {
   const [items, setItems] = useState<ItemType[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [currentVoice, setCurrentVoice] = useState<string>('ballad');
+  const [currentVoice, setCurrentVoice] = useState<string>("ballad");
   const [audioData, setAudioData] = useState<Float32Array>();
 
   const instructions = `You are an IELTS speaking examiner. Your name is ${currentVoice}. Conduct a natural IELTS speaking test conversation by asking ONE question at a time and waiting for the candidate's response.
@@ -102,9 +102,7 @@ At the end of the test, provide a detailed assessment report in markdown format 
     const client = clientRef.current;
     const wavRecorder = wavRecorderRef.current;
     const wavStreamPlayer = new WavStreamPlayer({
-      onAudioData: (data: Float32Array) => {
-        setAudioData(data);
-      },
+      sampleRate: 24000,
     });
 
     setItems([]);
@@ -114,13 +112,16 @@ At the end of the test, provide a detailed assessment report in markdown format 
       await wavStreamPlayer.connect();
       await client.connect();
 
-      client.updateSession({
-        voice: currentVoice as any,
-        instructions,
-        temperature: 0.6,
-        input_audio_transcription: { model: "whisper-1" },
-        turn_detection: { type: "server_vad", silence_duration_ms: 3000 },
-      });
+      client.updateSession(
+        {
+          voice: currentVoice as any,
+          instructions,
+          temperature: 0.6,
+          input_audio_transcription: { model: "whisper-1" },
+          turn_detection: { type: "server_vad", silence_duration_ms: 3000 },
+        },
+        "openai"
+      );
 
       client.sendUserMessageContent([
         {
@@ -285,7 +286,10 @@ At the end of the test, provide a detailed assessment report in markdown format 
             )}
           >
             {isConnected ? (
-              <WaveformAnimation className="w-6 h-6 text-white" audioData={audioData} />
+              <WaveformAnimation
+                className="w-6 h-6 text-white"
+                audioData={audioData}
+              />
             ) : (
               <Mic className="w-6 h-6" />
             )}
