@@ -14,8 +14,7 @@ export function Nav() {
         { label: "Chat", icon: Icons.chat, href: "/chat" },
         { label: "Practice", icon: Icons.practice, href: "/practice" },
         { label: "Test", icon: Icons.test, href: "/test" },
-        { label: "Discover", icon: Icons.discover, href: "/questions" },
-        { label: <Icons.settings className="w-5 h-5" />, href: "/account" },
+        { label: "Discover", icon: Icons.discover, href: "/discover" },
       ].map((item) => (
         <Link
           key={item.href}

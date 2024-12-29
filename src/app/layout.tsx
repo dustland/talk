@@ -47,7 +47,7 @@ export default function RootLayout({
             <div className="relative z-10 flex items-center justify-between h-full mx-auto container px-4">
               <Link href="/" className="flex items-center gap-2">
                 <Image
-                  src="/talk.svg"
+                  src="/logo.svg"
                   alt="Talk"
                   width={32}
                   height={32}

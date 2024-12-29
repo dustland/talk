@@ -80,8 +80,13 @@ export function AuthButton() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="w-full p-2 mt-1">
-          <Link href="/settings" className="flex w-full items-center gap-2 cursor-pointer">
-            Settings
+          <Link href="/account/usage" className="flex w-full items-center gap-2 cursor-pointer">
+            Usage
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="w-full p-2 mt-1" disabled>
+          <Link href="/account/settings" className="flex w-full items-center gap-2 cursor-pointer">
+            Account Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -91,12 +96,6 @@ export function AuthButton() {
           </div>
           <ThemeSwitch />
         </div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="w-full p-2">
-          <Link href="/docs" className="flex w-full items-center gap-2 cursor-pointer">
-            API Documentation
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-2 justify-between cursor-pointer">
           Sign Out

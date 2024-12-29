@@ -18,17 +18,12 @@ function LoginContent() {
             alt="logo"
             width={48}
             height={48}
-            src="/images/logo.svg"
-            className="mx-auto h-20 w-20"
+            src="/logo.svg"
+            className="mx-auto h-16 w-16"
           />
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome Back</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">Talk</h1>
         </div>
         <UserAuthForm redirect={redirect} />
-        <p className="px-8 text-center text-sm text-muted-foreground">
-          <Link href="/auth/register" className="hover:text-brand underline underline-offset-4">
-            Don&apos;t have an account? Sign up now
-          </Link>
-        </p>
       </div>
     </div>
   );

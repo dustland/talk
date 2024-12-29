@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/talk.png" alt="IELTS Speaking Master" width="128" />
+<img src="public/logo.png" alt="IELTS Speaking Master" width="128" />
 
 # Talk
 

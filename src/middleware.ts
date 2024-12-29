@@ -18,6 +18,6 @@ export const config = {
      * - api/status (status endpoint)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|api|favicon.ico|auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)',
+    '/((?!_next/static|_next/image|api|favicon.ico|auth|discover|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)',
   ],
 };
