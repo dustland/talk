@@ -1,9 +1,14 @@
 import Logo from "@/components/logo";
 import {
   AlertTriangle,
+  Book,
+  Compass,
   Loader2,
   LoaderPinwheel,
   LucideProps,
+  MessageCircle,
+  School,
+  Search,
   Settings,
   X,
   type Icon as LucideIcon,
@@ -17,7 +22,11 @@ export const Icons = {
   settings: Settings,
   spinner: Loader2,
   pinwheel: LoaderPinwheel,
-  gitHub: ({ ...props }: LucideProps) => (
+  test: School,
+  discover: Compass,
+  practice: Search,
+  chat: MessageCircle,
+  github: ({ ...props }: LucideProps) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"

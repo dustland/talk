@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Nav } from "@/components/nav";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AuthButton } from "@/components/auth-button";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -60,6 +61,7 @@ export default function RootLayout({
               <div className="flex items-center gap-2">
                 <Nav />
               </div>
+              <AuthButton />
             </div>
           </header>
 
