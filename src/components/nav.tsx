@@ -11,17 +11,17 @@ export function Nav() {
   return (
     <div className="flex items-center gap-4 md:gap-6">
       {[
-        { label: "Chat", icon: Icons.chat, href: "/chat" },
-        { label: "Practice", icon: Icons.practice, href: "/practice" },
-        { label: "Test", icon: Icons.test, href: "/test" },
+        { label: "Chat", icon: Icons.mic, href: "/chat" },
+        { label: "Practice", icon: Icons.graduationCap, href: "/practice" },
+        { label: "Test", icon: Icons.audio, href: "/test" },
         { label: "Discover", icon: Icons.discover, href: "/discover" },
       ].map((item) => (
         <Link
           key={item.href}
           href={item.href}
           className={cn(
-            "flex items-center gap-2 text-white/70 hover:text-white transition-colors text-center font-bold",
-            pathname === item.href && "text-white"
+            "flex items-center gap-2 text-white/70 hover:text-white transition-colors text-center px-2 py-1 rounded-xs",
+            pathname === item.href && "text-white border-b border-white"
           )}
         >
           {item.icon && <item.icon className="w-4 h-4" />}

@@ -16,6 +16,7 @@ import { RealtimeEvent } from "@/types/realtime";
 import { VoiceSelect } from "@/components/voice-select";
 import { Timer } from "@/components/timer";
 import { toast } from "@/hooks/use-toast";
+import { Icons } from "@/components/icons";
 
 const LOCAL_RELAY_SERVER_URL: string =
     process.env.NEXT_PUBLIC_LOCAL_RELAY_SERVER_URL || "";
@@ -268,7 +269,7 @@ Remember to:
                 {!isConnected ? (
                     <div className="flex flex-col items-center justify-between gap-4">
                         <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                            <AudioWaveform className="h-12 w-12" />
+                            <Icons.mic className="h-12 w-12" />
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center">
@@ -286,8 +287,8 @@ Remember to:
                         <div className="flex items-center justify-center">
                             <span className="text-white/50 text-center max-w-[80%]">
                                 Have a casual conversation with <span className="capitalize">{currentVoice}</span>.
-                                They'll choose an interesting topic and help you practice natural English conversation.
-                                At the end, you'll receive helpful feedback on your speaking skills.
+                                They&apos;ll choose an interesting topic and help you practice natural English conversation.
+                                At the end, you&apos;ll receive helpful feedback on your speaking skills.
                             </span>
                         </div>
                     </div>
@@ -318,7 +319,7 @@ Remember to:
                         {isConnected ? (
                             "End Conversation"
                         ) : (
-                            <span className="capitalize">Start Test with {currentVoice}</span>
+                            <span className="capitalize">Chat with {currentVoice}</span>
                         )}
                     </Button>
                 </div>
@@ -342,7 +343,7 @@ Remember to:
                                             {item.role === "assistant" ? (
                                                 <>
                                                     <User2 className="h-4 w-4" />
-                                                    <span>Examiner</span>
+                                                    <span className="capitalize">{currentVoice}</span>
                                                 </>
                                             ) : (
                                                 <>

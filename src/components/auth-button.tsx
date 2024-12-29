@@ -43,7 +43,7 @@ export function AuthButton() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-8 w-8 cursor-pointer">
+        <Avatar className="h-7 w-7 cursor-pointer">
           <AvatarImage src={user.user_metadata.avatar_url} alt={user.user_metadata.full_name} />
           <AvatarFallback>
             {user.user_metadata.full_name?.[0]?.toUpperCase() || 'U'}

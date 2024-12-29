@@ -1,9 +1,11 @@
 import Logo from "@/components/logo";
 import {
   AlertTriangle,
+  AudioWaveform,
   BadgeCheck,
   Book,
   Compass,
+  GraduationCap,
   Laptop,
   Loader2,
   LoaderPinwheel,
@@ -12,10 +14,14 @@ import {
   Mail,
   MessageCircle,
   MessagesSquare,
+  Mic,
+  Mic2,
+  MicOff,
   Moon,
   School,
   Search,
   Settings,
+  Speech,
   Sun,
   X,
   type Icon as LucideIcon,
@@ -30,11 +36,14 @@ export const Icons = {
   settings: Settings,
   spinner: Loader2,
   pinwheel: LoaderPinwheel,
-  test: School,
+  graduationCap: GraduationCap,
   discover: Compass,
   mail: Mail,
-  practice: Search,
+  speech: Speech,
+  mic: Mic,
+  micoff: MicOff,
   chat: MessagesSquare,
+  audio: AudioWaveform,
   github: ({ ...props }: LucideProps) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
