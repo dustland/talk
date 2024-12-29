@@ -20,12 +20,12 @@ export function Nav() {
           key={item.href}
           href={item.href}
           className={cn(
-            "flex items-center gap-2 text-white/70 hover:text-white transition-colors text-center px-2 py-1 rounded-xs",
+            "flex items-center gap-2 text-white/70 hover:text-white transition-colors text-center px-2 py-1 text-sm md:text-base",
             pathname === item.href && "text-white border-b border-white"
           )}
         >
           {item.icon && <item.icon className="w-4 h-4" />}
-          {item.label}
+          <span className={cn("hidden md:block", pathname === item.href && "block text-white")}>{item.label}</span>
         </Link>
       ))}
       {/* <Link
