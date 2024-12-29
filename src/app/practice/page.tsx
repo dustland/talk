@@ -936,7 +936,7 @@ function PageContent() {
     </div>
   );
 }
-export default function Page() {
+export default function PracticePage() {
   return (
     <Suspense fallback={<Loading />}>
       <PageContent />

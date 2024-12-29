@@ -13,6 +13,7 @@ export function Nav() {
       {[
         { label: "Chat", href: "/chat" },
         { label: "Practice", href: "/practice" },
+        { label: "Test", href: "/test" },
         { label: "Discover", href: "/questions" },
         { label: <Icons.settings className="w-5 h-5" />, href: "/account" },
       ].map((item) => (
